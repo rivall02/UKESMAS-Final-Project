@@ -145,8 +145,8 @@ Ubah **hanya** file milikmu. File baru boleh dibuat di dalam area sendiri.
 | **Darryl** | `src/pages/Appointments.jsx`, `src/components/{BookingModal,AppointmentCard}.jsx`, `src/services/appointments.js`, `src/styles/appointments.css` |
 | **Dhesy** | `src/components/{Calendar,RecordModal}.jsx`, `src/utils/calendar.js`, `src/pages/Records.jsx`, `src/services/records.js`, `src/styles/{calendar,records}.css` |
 | **Frinci** | `src/pages/Sos.jsx`, `src/components/SosButton.jsx`, `src/components/sos/*`, `src/services/emergency.js`, `src/styles/sos.css` |
-| **Christania** | `src/components/{EmergencyAlert,UrgentPanel}.jsx`, `src/services/{emergencyStaff,ai}.js`, `src/pages/AIConsultation.jsx`, `src/styles/emergency.css` |
-| **Naydeline** | `src/pages/{Profile,Health}.jsx`, `src/components/DailyTip.jsx`, `src/services/articles.js`, `src/styles/{profile,health}.css` |
+| **Christania** | `src/components/{EmergencyAlert,UrgentPanel}.jsx`, `src/services/{emergencyStaff,ai}.js`, `src/pages/AIConsultation.jsx`, `src/styles/{emergency,ai}.css` |
+| **Naydeline** | `src/pages/{Profile,Health}.jsx`, `src/components/{DailyTip,Avatar}.jsx`, `src/services/articles.js`, `src/styles/{profile,health}.css` |
 
 **CSS:** jangan menambah ke `src/styles.css`. Buat file CSS sendiri di `src/styles/` lalu import di komponenmu: `import '../styles/sos.css';`. Awali nama class dengan nama fiturmu (misal `.sos-...`, `.cal-...`) supaya tidak bentrok.
 
