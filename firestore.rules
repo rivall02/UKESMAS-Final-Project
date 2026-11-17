@@ -66,7 +66,11 @@ service cloud.firestore {
             && resource.data.userId == request.auth.uid
             && request.resource.data.userId == resource.data.userId
             && request.resource.data.priority == 'urgent'
-            && request.resource.data.status == 'Urgent');
+            && request.resource.data.status == 'Urgent')
+        || (active()
+            && resource.data.get('reporterId', '') == request.auth.uid
+            && resource.data.status == 'Urgent'
+            && changesOnly(['emergencyNote', 'locationDetail', 'location', 'ambulanceRequested']));
       allow delete: if isStaff()
         || (active()
             && resource.data.userId == request.auth.uid

@@ -79,6 +79,18 @@ Darurat     : Urgent → Ditangani → Selesai
 
 Mahasiswa **membatalkan** janji = dokumen **dihapus** (hanya status Menunggu/Terjadwal).
 
+Selama status masih `Urgent`, **pelapor** boleh melengkapi `emergencyNote`, `locationDetail`, `location`, dan `ambulanceRequested` setelah SOS terkirim.
+
+**Gabung ke darurat:** saat SOS untuk diri sendiri, janji hari yang sama berstatus Menunggu/Terjadwal yang jamnya antara 30 menit sebelum s/d 60 menit sesudah SOS diubah menjadi darurat (bukan dokumen baru). Sudah ditangani `createEmergency()`.
+
+**AI → SOS:** jika Konsultasi AI mendeteksi `HIGH`, halaman AI membuka halaman SOS dengan:
+
+```js
+navigate('/sos', { state: { description, aiSummary, source: 'ai' } });
+```
+
+Halaman SOS wajib membaca `useLocation().state` dan mengisi form dengan data tersebut.
+
 ### `slots/{YYYY-MM-DD_HH:mm}`
 `{ count: number }`, yaitu jumlah janji aktif di slot itu. Dikelola oleh `reserveSlot` / `releaseSlot`.
 
