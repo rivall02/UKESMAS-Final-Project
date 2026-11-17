@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check } from 'lucide-react';
+import { Plus, Check, AlertTriangle, MapPin, ClipboardList, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getAppointments,
   createAppointment,
   updateAppointmentStatus,
+  createRecord,
+  createNotification,
 } from '../services/firestore';
 import Title from '../components/Title';
 import AppointmentCard from '../components/AppointmentCard';
@@ -18,11 +20,21 @@ export default function Appointments() {
   const [booking, setBooking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [book, setBook] = useState({ service: 'Konsultasi Umum', date: '', time: '', note: '' });
+  const [recordModal, setRecordModal] = useState(null);
+  const [recordForm, setRecordForm] = useState({ service: 'Konsultasi Umum', summary: '' });
+  const [urgentSound, setUrgentSound] = useState(false);
+
+  const urgentList = appointments.filter((a) => a.priority === 'urgent' && a.status === 'Urgent');
+  const normalList = appointments.filter((a) => a.priority !== 'urgent' || a.status !== 'Urgent');
 
   async function load() {
     try {
       const data = await getAppointments(profile.id, isAdmin);
       setAppointments(data);
+      if (isAdmin) {
+        const hasUrgent = data.some((a) => a.priority === 'urgent' && a.status === 'Urgent');
+        if (hasUrgent) setUrgentSound(true);
+      }
     } catch (err) {
       console.error('Gagal memuat janji temu:', err);
     }
@@ -30,6 +42,10 @@ export default function Appointments() {
 
   useEffect(() => {
     if (profile) load();
+    if (isAdmin) {
+      const interval = setInterval(load, 15000);
+      return () => clearInterval(interval);
+    }
   }, [profile, isAdmin]);
 
   async function handleBooking(e) {
@@ -57,6 +73,23 @@ export default function Appointments() {
   async function handleStatus(a, status) {
     try {
       await updateAppointmentStatus(a.id, status);
+      if (isAdmin && a.userId) {
+        const statusMsg = {
+          Terjadwal: 'Janji temu kamu telah disetujui dan dijadwalkan.',
+          Selesai: 'Janji temu kamu telah selesai.',
+          Ditolak: 'Janji temu kamu ditolak. Silakan buat janji baru.',
+          Ditangani: 'Janji temu darurat kamu sedang ditangani petugas.',
+        };
+        if (statusMsg[status]) {
+          await createNotification({
+            userId: a.userId,
+            title: `Status janji temu: ${status}`,
+            message: statusMsg[status],
+            type: 'appointment',
+            appointmentId: a.id,
+          });
+        }
+      }
       await load();
     } catch (err) {
       console.error('Gagal update status:', err);
@@ -64,11 +97,70 @@ export default function Appointments() {
     }
   }
 
-  const filtered = appointments.filter((a) => filter === 'Semua' || a.status === filter);
+  async function handleAddRecord(e) {
+    e.preventDefault();
+    try {
+      await createRecord({
+        userId: recordModal.userId,
+        date: recordModal.date,
+        service: recordForm.service,
+        summary: recordForm.summary,
+        provider: 'Petugas UKESMAS',
+        appointmentId: recordModal.id,
+      });
+      setRecordModal(null);
+      setRecordForm({ service: 'Konsultasi Umum', summary: '' });
+      alert('Rekam medis berhasil ditambahkan.');
+    } catch (err) {
+      console.error('Gagal menambah rekam medis:', err);
+      alert('Gagal menyimpan rekam medis: ' + err.message);
+    }
+  }
+
+  const filtered = normalList.filter((a) => filter === 'Semua' || a.status === filter);
 
   return (
     <>
       <Title title="Janji Temu" desc="Atur dan pantau jadwal kunjungan layanan kesehatan." />
+
+      {isAdmin && urgentList.length > 0 && (
+        <div className="urgent-panel">
+          <div className="urgent-panel-header">
+            <div className="urgent-pulse">
+              <AlertTriangle size={18} />
+            </div>
+            <div>
+              <h3>Janji Temu Darurat ({urgentList.length})</h3>
+              <small>Mahasiswa memerlukan penanganan segera!</small>
+            </div>
+            {urgentSound && (
+              <button className="dismiss-sound" onClick={() => setUrgentSound(false)}>
+                <Bell size={14} /> Diamkan
+              </button>
+            )}
+          </div>
+          {urgentList.map((a) => (
+            <div className="urgent-item" key={a.id}>
+              <div className="urgent-info">
+                <b>{a.studentName}</b> <span className="badge-urgent">URGENT</span>
+                <small>{a.nim}</small>
+                <div className="urgent-location">
+                  <MapPin size={12} /> {a.location || 'Lokasi tidak tersedia'}
+                </div>
+                {a.aiSummary && <p className="urgent-summary">{a.aiSummary}</p>}
+                <small className="urgent-time">{a.time} · {a.date}</small>
+              </div>
+              <div className="actions">
+                <button onClick={() => handleStatus(a, 'Ditangani')} className="urgent-handle">
+                  <Check size={14} /> Tangani
+                </button>
+                <button onClick={() => handleStatus(a, 'Selesai')}>Selesai</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="panel">
         <div className="panelhead">
           <h3>Daftar janji temu</h3>
@@ -93,6 +185,11 @@ export default function Appointments() {
                 {a.status === 'Menunggu' && (
                   <button onClick={() => handleStatus(a, 'Terjadwal')}>
                     <Check size={14} /> Setujui
+                  </button>
+                )}
+                {a.status === 'Terjadwal' && (
+                  <button onClick={() => setRecordModal(a)} className="record-btn">
+                    <ClipboardList size={14} /> Rekam Medis
                   </button>
                 )}
                 {a.status !== 'Selesai' && (
@@ -148,6 +245,33 @@ export default function Appointments() {
             <button className="primary" disabled={submitting}>
               {submitting ? 'Mengirim...' : 'Kirim permintaan'}
             </button>
+          </form>
+        </Modal>
+      )}
+
+      {recordModal && (
+        <Modal title={`Rekam Medis — ${recordModal.studentName}`} close={() => setRecordModal(null)}>
+          <form className="form" onSubmit={handleAddRecord}>
+            <label>
+              Layanan
+              <select value={recordForm.service} onChange={(e) => setRecordForm({ ...recordForm, service: e.target.value })}>
+                <option>Konsultasi Umum</option>
+                <option>Pemeriksaan Rutin</option>
+                <option>Konsultasi Kesehatan Mental</option>
+                <option>Konsultasi Gizi</option>
+              </select>
+            </label>
+            <label>
+              Ringkasan pemeriksaan
+              <textarea
+                required
+                rows="4"
+                value={recordForm.summary}
+                onChange={(e) => setRecordForm({ ...recordForm, summary: e.target.value })}
+                placeholder="Tuliskan hasil pemeriksaan dan catatan..."
+              />
+            </label>
+            <button className="primary">Simpan rekam medis</button>
           </form>
         </Modal>
       )}

@@ -10,6 +10,7 @@ import {
   Activity,
   ArrowUpRight,
   X,
+  UserCircle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -19,6 +20,7 @@ const studentNav = [
   { label: 'Rekam Medis', icon: ClipboardList, path: '/records' },
   { label: 'Kesehatan', icon: BookHeart, path: '/health' },
   { label: 'Konsultasi AI', icon: Sparkles, path: '/ai' },
+  { label: 'Profil', icon: UserCircle, path: '/profile' },
 ];
 
 const adminNav = [

@@ -11,6 +11,7 @@ import Records from './pages/Records';
 import Students from './pages/Students';
 import Health from './pages/Health';
 import AIConsultation from './pages/AIConsultation';
+import Profile from './pages/Profile';
 
 function ProtectedLayout() {
   const { profile, loading } = useAuth();
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/students" element={<StudentsPage />} />
         <Route path="/health" element={<Health />} />
         <Route path="/ai" element={<AIConsultation />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

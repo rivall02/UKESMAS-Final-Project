@@ -69,6 +69,10 @@ export function AuthProvider({ children }) {
     return { id: cred.user.uid, ...userData };
   }
 
+  function refreshProfile(data) {
+    setProfile((prev) => ({ ...prev, ...data }));
+  }
+
   async function logout() {
     await signOut(auth);
     setUser(null);
@@ -82,6 +86,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refreshProfile,
     isAdmin: profile?.role === 'admin',
   };
 
