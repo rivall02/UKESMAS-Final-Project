@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/auth';
 import { FACULTY_DATA, ROLE_LABELS } from '../constants';
 import { updateUser, upsertDirectory } from '../services/users';
 import Title from '../components/Title';
+import ChangePassword from '../components/ChangePassword';
 
 function initialForm(profile) {
   return {
@@ -168,6 +169,8 @@ export default function Profile() {
           )}
         </div>
       </div>
+
+      <ChangePassword />
     </>
   );
 }

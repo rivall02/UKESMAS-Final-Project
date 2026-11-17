@@ -141,7 +141,7 @@ Ubah **hanya** file milikmu. File baru boleh dibuat di dalam area sendiri.
 
 | Pemilik | File |
 |---|---|
-| **Ketua** | `src/App.jsx`, `src/main.jsx`, `src/constants.js`, `src/utils/date.js`, `src/contexts/*`, `src/components/{Sidebar,Header,Modal,Title,Empty,Stat,NotificationBell}.jsx`, `src/services/{users,notifications}.js`, `src/pages/{Auth,Students,ManageStaff,Landing,Dashboard}.jsx`, `src/styles.css`, `firestore.rules`, `firebase.json`, `package.json`, `docs/`, `.github/` |
+| **Ketua** | `src/App.jsx`, `src/main.jsx`, `src/constants.js`, `src/utils/date.js`, `src/contexts/*`, `src/components/{Sidebar,Header,Modal,Title,Empty,Stat,NotificationBell,ChangePassword}.jsx`, `src/services/{users,notifications}.js`, `src/pages/{Auth,Students,ManageStaff,Landing,Dashboard}.jsx`, `src/styles.css`, `firestore.rules`, `firebase.json`, `package.json`, `docs/`, `.github/` |
 | **Darryl** | `src/pages/Appointments.jsx`, `src/components/{BookingModal,AppointmentCard}.jsx`, `src/services/appointments.js`, `src/styles/appointments.css` |
 | **Dhesy** | `src/components/{Calendar,RecordModal}.jsx`, `src/utils/calendar.js`, `src/pages/Records.jsx`, `src/services/records.js`, `src/styles/{calendar,records}.css` |
 | **Frinci** | `src/pages/Sos.jsx`, `src/components/SosButton.jsx`, `src/components/sos/*`, `src/services/emergency.js`, `src/styles/sos.css` |
