@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HeartPulse,
@@ -10,79 +10,57 @@ import {
   Plus,
   ArrowUpRight,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { getAppointments, getRecords, getUsers, createAppointment } from '../services/firestore';
+import { useAuth } from '../contexts/auth';
+import { subscribeAppointments } from '../services/appointments';
+import { subscribeRecords } from '../services/records';
+import { countStudents } from '../services/users';
 import Stat from '../components/Stat';
 import AppointmentCard from '../components/AppointmentCard';
 import Empty from '../components/Empty';
-import Modal from '../components/Modal';
+import BookingModal from '../components/BookingModal';
+import DailyTip from '../components/DailyTip';
+
+const logError = (what) => (err) => console.error(`Gagal memuat ${what}:`, err);
 
 export default function Dashboard() {
-  const { profile, isAdmin } = useAuth();
+  const { profile, isStaff } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [records, setRecords] = useState([]);
-  const [userCount, setUserCount] = useState(0);
+  const [studentCount, setStudentCount] = useState(0);
   const [booking, setBooking] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [book, setBook] = useState({ service: 'Konsultasi Umum', date: '', time: '', note: '' });
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [a, r] = await Promise.all([
-          getAppointments(profile.id, isAdmin),
-          getRecords(profile.id, isAdmin),
-        ]);
-        setAppointments(a);
-        setRecords(r);
-        if (isAdmin) {
-          const users = await getUsers();
-          setUserCount(users.filter((u) => u.role === 'student').length);
-        }
-      } catch (err) {
-        console.error('Gagal memuat data dashboard:', err);
-      }
-    }
-    if (profile) load();
-  }, [profile, isAdmin]);
+    const scope = { userId: profile.id, isStaff };
+    const unsubA = subscribeAppointments(scope, setAppointments, logError('janji temu'));
+    const unsubR = subscribeRecords(scope, setRecords, logError('rekam medis'));
+    return () => {
+      unsubA();
+      unsubR();
+    };
+  }, [profile.id, isStaff]);
 
-  async function handleBooking(e) {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await createAppointment({
-        ...book,
-        userId: profile.id,
-        studentName: profile.name || '',
-        nim: profile.nim || '',
-        status: 'Menunggu',
-      });
-      const a = await getAppointments(profile.id, isAdmin);
-      setAppointments(a);
-      setBooking(false);
-      setBook({ service: 'Konsultasi Umum', date: '', time: '', note: '' });
-    } catch (err) {
-      console.error('Gagal membuat janji temu:', err);
-      alert('Gagal membuat janji temu: ' + err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  useEffect(() => {
+    if (!isStaff) return;
+    let alive = true;
+    countStudents()
+      .then((n) => alive && setStudentCount(n))
+      .catch(logError('jumlah mahasiswa'));
+    return () => {
+      alive = false;
+    };
+  }, [isStaff]);
 
   return (
     <>
       <div className="welcome">
         <div>
-          <small className="eyebrow">
-            {isAdmin ? 'ADMINISTRATION OVERVIEW' : 'STUDENT WELLNESS SPACE'}
-          </small>
+          <small className="eyebrow">{isStaff ? 'ADMINISTRATION OVERVIEW' : 'STUDENT WELLNESS SPACE'}</small>
           <h1>
-            {isAdmin ? 'Halo, Admin UKESMAS!' : `Hai, ${profile?.name?.split(' ')[0]}!`}{' '}
-            <em>♡</em>
+            Hai, {profile.name?.split(' ')[0]}! <em>♡</em>
           </h1>
           <p>
-            {isAdmin
+            {isStaff
               ? 'Pantau aktivitas layanan kesehatan mahasiswa.'
               : 'Bagaimana kabarmu hari ini? Yuk, tetap sehat dan semangat menjalani hari.'}
           </p>
@@ -100,7 +78,11 @@ export default function Dashboard() {
       <section className="hero">
         <div>
           <small>YOUR HEALTH MATTERS</small>
-          <h2>Sehat itu bukan tujuan,<br />tapi perjalanan. ♡</h2>
+          <h2>
+            Sehat itu bukan tujuan,
+            <br />
+            tapi perjalanan. ♡
+          </h2>
           <p>Mulai langkah kecil untuk menjaga kesehatan fisik dan mentalmu bersama UKESMAS.</p>
           <button className="white" onClick={() => navigate('/health')}>
             Jelajahi tips sehat <ArrowUpRight size={15} />
@@ -112,20 +94,18 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {!isStaff && <DailyTip />}
+
       <div className="stats">
-        <Stat n={appointments.length} label={isAdmin ? 'Total janji temu' : 'Janji temu saya'} icon={<CalendarDays />} />
+        <Stat n={appointments.length} label={isStaff ? 'Total janji temu' : 'Janji temu saya'} icon={<CalendarDays />} />
         <Stat n={records.length} label="Rekam medis" icon={<ClipboardList />} />
-        <Stat
-          n={isAdmin ? userCount : 'Aktif'}
-          label={isAdmin ? 'Mahasiswa' : 'Status akun'}
-          icon={<Users />}
-        />
+        <Stat n={isStaff ? studentCount : 'Aktif'} label={isStaff ? 'Mahasiswa' : 'Status akun'} icon={<Users />} />
       </div>
 
       <div className="panel">
         <div className="panelhead">
           <div>
-            <h3>{isAdmin ? 'Janji temu terbaru' : 'Janji temu saya'}</h3>
+            <h3>{isStaff ? 'Janji temu terbaru' : 'Janji temu saya'}</h3>
             <small>Jadwal konsultasi kesehatan</small>
           </div>
           <button className="link" onClick={() => navigate('/appointments')}>
@@ -136,14 +116,14 @@ export default function Dashboard() {
           <AppointmentCard key={a.id} a={a} />
         ))}
         {!appointments.length && <Empty>Belum ada janji temu.</Empty>}
-        <button className="outline" onClick={() => (isAdmin ? navigate('/appointments') : setBooking(true))}>
+        <button className="outline" onClick={() => (isStaff ? navigate('/appointments') : setBooking(true))}>
           <Plus size={15} />
-          {isAdmin ? 'Kelola janji temu' : 'Buat janji temu baru'}
+          {isStaff ? 'Kelola janji temu' : 'Buat janji temu baru'}
         </button>
       </div>
 
       <div className="quick">
-        {(isAdmin
+        {(isStaff
           ? [
               ['Janji Temu', CalendarDays, '/appointments'],
               ['Mahasiswa', Users, '/students'],
@@ -164,47 +144,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {booking && (
-        <Modal title="Buat janji temu" close={() => setBooking(false)}>
-          <form className="form" onSubmit={handleBooking}>
-            <label>
-              Jenis layanan
-              <select value={book.service} onChange={(e) => setBook({ ...book, service: e.target.value })}>
-                <option>Konsultasi Umum</option>
-                <option>Konsultasi Kesehatan Mental</option>
-                <option>Pemeriksaan Kesehatan</option>
-                <option>Konsultasi Gizi</option>
-              </select>
-            </label>
-            <label>
-              Tanggal
-              <input
-                required
-                type="date"
-                min={new Date().toISOString().slice(0, 10)}
-                value={book.date}
-                onChange={(e) => setBook({ ...book, date: e.target.value })}
-              />
-            </label>
-            <label>
-              Waktu
-              <select required value={book.time} onChange={(e) => setBook({ ...book, time: e.target.value })}>
-                <option value="">Pilih waktu</option>
-                {['09:00', '10:00', '11:00', '13:00', '14:00'].map((x) => (
-                  <option key={x}>{x}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Catatan
-              <textarea rows="3" value={book.note} onChange={(e) => setBook({ ...book, note: e.target.value })} />
-            </label>
-            <button className="primary" disabled={submitting}>
-              {submitting ? 'Mengirim...' : 'Kirim permintaan'}
-            </button>
-          </form>
-        </Modal>
-      )}
+      {booking && <BookingModal onClose={() => setBooking(false)} />}
     </>
   );
 }

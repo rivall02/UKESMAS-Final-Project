@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   HeartPulse,
@@ -11,8 +10,11 @@ import {
   ArrowUpRight,
   X,
   UserCircle,
+  Siren,
+  UserCog,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
+import { ROLE_LABELS } from '../constants';
 
 const studentNav = [
   { label: 'Dashboard', icon: Activity, path: '/dashboard' },
@@ -20,20 +22,28 @@ const studentNav = [
   { label: 'Rekam Medis', icon: ClipboardList, path: '/records' },
   { label: 'Kesehatan', icon: BookHeart, path: '/health' },
   { label: 'Konsultasi AI', icon: Sparkles, path: '/ai' },
+  { label: 'SOS Darurat', icon: Siren, path: '/sos' },
   { label: 'Profil', icon: UserCircle, path: '/profile' },
 ];
 
-const adminNav = [
+const staffNav = [
   { label: 'Dashboard', icon: Activity, path: '/dashboard' },
   { label: 'Janji Temu', icon: CalendarDays, path: '/appointments' },
   { label: 'Data Mahasiswa', icon: Users, path: '/students' },
   { label: 'Rekam Medis', icon: ClipboardList, path: '/records' },
   { label: 'Edukasi', icon: BookHeart, path: '/health' },
+  { label: 'Profil', icon: UserCircle, path: '/profile' },
+];
+
+const adminNav = [
+  ...staffNav.slice(0, 5),
+  { label: 'Kelola Staff', icon: UserCog, path: '/staff' },
+  staffNav[5],
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { isAdmin } = useAuth();
-  const nav = isAdmin ? adminNav : studentNav;
+  const { role, isStudent, isAdmin } = useAuth();
+  const nav = isAdmin ? adminNav : isStudent ? studentNav : staffNav;
 
   return (
     <aside className={open ? 'side open' : 'side'}>
@@ -42,22 +52,23 @@ export default function Sidebar({ open, onClose }) {
         <b>UKESMAS<small>UNIVERSITAS KLABAT</small></b>
         <button className="close" onClick={onClose}><X /></button>
       </div>
-      <small className="caption">{isAdmin ? 'ADMINISTRATOR' : 'MENU UTAMA'}</small>
+      <small className="caption">{isStudent ? 'MENU UTAMA' : ROLE_LABELS[role]?.toUpperCase()}</small>
       {nav.map(({ label, icon: Icon, path }) => (
         <NavLink
           key={path}
           to={path}
-          className={({ isActive }) => isActive ? 'nav active' : 'nav'}
+          className={({ isActive }) => (isActive ? 'nav active' : 'nav')}
           onClick={onClose}
         >
-          <Icon size={18} />{label}
+          <Icon size={18} />
+          {label}
         </NavLink>
       ))}
       <div className="help">
         <HeartPulse />
-        <b>{isAdmin ? 'Panel petugas' : 'Butuh bantuan?'}</b>
-        <p>{isAdmin ? 'Kelola layanan kesehatan mahasiswa.' : 'Tim UKESMAS siap membantu kebutuhan kesehatanmu.'}</p>
-        <NavLink to={isAdmin ? '/appointments' : '/ai'} className="link" onClick={onClose}>
+        <b>{isStudent ? 'Butuh bantuan?' : 'Panel petugas'}</b>
+        <p>{isStudent ? 'Tim UKESMAS siap membantu kebutuhan kesehatanmu.' : 'Kelola layanan kesehatan mahasiswa.'}</p>
+        <NavLink to={isStudent ? '/ai' : '/appointments'} className="link" onClick={onClose}>
           Buka layanan <ArrowUpRight size={14} />
         </NavLink>
       </div>

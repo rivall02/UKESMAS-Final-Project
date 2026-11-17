@@ -1,37 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { getUsers, deleteUser } from '../services/firestore';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/auth';
+import { subscribeStudents, setUserDisabled } from '../services/users';
 import Title from '../components/Title';
+import Empty from '../components/Empty';
 
 export default function Students({ search }) {
   const { isAdmin } = useAuth();
-  const [users, setUsers] = useState([]);
+  const [students, setStudents] = useState([]);
 
-  async function load() {
-    const data = await getUsers();
-    setUsers(data.filter((u) => u.role === 'student'));
-  }
-
-  useEffect(() => {
-    if (isAdmin) load();
-  }, [isAdmin]);
-
-  async function handleDelete(id) {
-    if (!confirm('Hapus akun mahasiswa ini?')) return;
-    await deleteUser(id);
-    await load();
-  }
-
-  const filtered = users.filter((x) =>
-    `${x.name} ${x.nim} ${x.email}`.toLowerCase().includes(search.toLowerCase()),
+  useEffect(
+    () => subscribeStudents(setStudents, (err) => console.error('Gagal memuat mahasiswa:', err)),
+    [],
   );
+
+  async function toggleDisabled(student) {
+    const action = student.disabled ? 'mengaktifkan kembali' : 'menonaktifkan';
+    if (!confirm(`Yakin ingin ${action} akun ${student.name}?`)) return;
+    try {
+      await setUserDisabled(student.id, !student.disabled);
+    } catch (err) {
+      alert('Gagal memperbarui akun: ' + err.message);
+    }
+  }
+
+  const q = search.toLowerCase();
+  const filtered = students.filter((x) => `${x.name} ${x.nim} ${x.email}`.toLowerCase().includes(q));
 
   return (
     <>
-      <Title title="Data Mahasiswa" desc="Kelola akun mahasiswa yang terdaftar di UKESMAS." />
+      <Title
+        title="Data Mahasiswa"
+        desc={isAdmin ? 'Kelola akun mahasiswa yang terdaftar di UKESMAS.' : 'Daftar mahasiswa yang terdaftar di UKESMAS.'}
+      />
       <div className="panel">
-        <h3>Mahasiswa terdaftar ({users.length})</h3>
+        <h3>Mahasiswa terdaftar ({students.length})</h3>
         <div className="tablewrap">
           <table>
             <thead>
@@ -40,7 +42,8 @@ export default function Students({ search }) {
                 <th>NIM</th>
                 <th>Email</th>
                 <th>Fakultas / Prodi</th>
-                <th>Aksi</th>
+                <th>Status</th>
+                {isAdmin && <th>Aksi</th>}
               </tr>
             </thead>
             <tbody>
@@ -54,14 +57,22 @@ export default function Students({ search }) {
                     <small>{x.program}</small>
                   </td>
                   <td>
-                    <button className="delete" onClick={() => handleDelete(x.id)}>
-                      <Trash2 size={15} />
-                    </button>
+                    <span className={'status ' + (x.disabled ? 'ditolak' : '')}>
+                      {x.disabled ? 'Nonaktif' : 'Aktif'}
+                    </span>
                   </td>
+                  {isAdmin && (
+                    <td>
+                      <button className={x.disabled ? 'textbutton' : 'delete'} onClick={() => toggleDisabled(x)}>
+                        {x.disabled ? 'Aktifkan' : 'Nonaktifkan'}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
+          {!filtered.length && <Empty>Tidak ada mahasiswa yang cocok.</Empty>}
         </div>
       </div>
     </>

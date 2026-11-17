@@ -1,31 +1,19 @@
-import React from 'react';
 import { Clock3, AlertTriangle } from 'lucide-react';
-
-const dateFmt = (d) =>
-  d
-    ? new Date(d + 'T00:00:00').toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      })
-    : '-';
+import { formatDate } from '../utils/date';
 
 export default function AppointmentCard({ a }) {
   const isUrgent = a.priority === 'urgent';
+  const day = a.date ? new Date(a.date + 'T00:00:00') : null;
 
   return (
     <div className={isUrgent ? 'appt appt-urgent' : 'appt'}>
       <div className={isUrgent ? 'cal cal-urgent' : 'cal'}>
-        {isUrgent ? (
+        {isUrgent || !day ? (
           <AlertTriangle size={18} />
         ) : (
           <>
-            <b>{new Date(a.date + 'T00:00:00').getDate()}</b>
-            <small>
-              {new Date(a.date + 'T00:00:00')
-                .toLocaleDateString('id-ID', { month: 'short' })
-                .toUpperCase()}
-            </small>
+            <b>{day.getDate()}</b>
+            <small>{day.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()}</small>
           </>
         )}
       </div>
@@ -35,7 +23,7 @@ export default function AppointmentCard({ a }) {
           {isUrgent && <span className="badge-urgent">URGENT</span>}
         </b>
         <small>
-          <Clock3 size={12} /> {a.time} WITA · {dateFmt(a.date)}
+          <Clock3 size={12} /> {a.time} WITA · {formatDate(a.date)}
         </small>
         <small>{a.studentName}</small>
       </div>

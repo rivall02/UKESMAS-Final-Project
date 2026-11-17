@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function active() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && myProfile().get('disabled', false) != true;
+    }
+
+    function isStaff() {
+      return active() && myProfile().role in ['staff', 'admin'];
+    }
+
+    function isAdmin() {
+      return active() && myProfile().role == 'admin';
+    }
+
+    function changes(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(keys);
+    }
+
+    function changesOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isStaff();
+      allow create: if isAdmin()
+        || (isSelf(uid)
+            && request.resource.data.role == 'student'
+            && request.resource.data.get('disabled', false) == false);
+      allow update: if isAdmin()
+        || (isSelf(uid) && active() && !changes(['role', 'disabled', 'email', 'staffCode']));
+      allow delete: if false;
+    }
+
+    match /directory/{uid} {
+      allow read: if active();
+      allow write: if isSelf(uid) || isAdmin();
+    }
+
+    match /appointments/{id} {
+      allow read: if isStaff()
+        || (active() && (resource.data.userId == request.auth.uid
+                         || resource.data.get('reporterId', '') == request.auth.uid));
+      allow create: if isStaff()
+        || (active() && (request.resource.data.userId == request.auth.uid
+                         || (request.resource.data.priority == 'urgent'
+                             && request.resource.data.reporterId == request.auth.uid)));
+      allow update: if isStaff()
+        || (active()
+            && resource.data.userId == request.auth.uid
+            && request.resource.data.userId == resource.data.userId
+            && request.resource.data.priority == 'urgent'
+            && request.resource.data.status == 'Urgent');
+      allow delete: if isStaff()
+        || (active()
+            && resource.data.userId == request.auth.uid
+            && resource.data.status in ['Menunggu', 'Terjadwal']);
+    }
+
+    match /slots/{slotId} {
+      allow read, write: if active();
+    }
+
+    match /settings/{id} {
+      allow read: if active();
+      allow write: if isAdmin();
+    }
+
+    match /records/{id} {
+      allow read: if isStaff() || (active() && resource.data.userId == request.auth.uid);
+      allow write: if isStaff();
+    }
+
+    match /articles/{id} {
+      allow read: if active();
+      allow write: if isStaff();
+    }
+
+    match /notifications/{id} {
+      allow read: if active() && resource.data.userId == request.auth.uid;
+      allow update: if active() && resource.data.userId == request.auth.uid && changesOnly(['read']);
+      allow create: if isStaff();
+      allow delete: if false;
+    }
+
+    match /aiChats/{uid}/{document=**} {
+      allow read, write: if isSelf(uid) && active();
+    }
+  }
+}

@@ -1,22 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { getArticles } from '../services/firestore';
+import { useState, useEffect } from 'react';
+import { getArticles } from '../services/articles';
 import Title from '../components/Title';
 import Modal from '../components/Modal';
+import Empty from '../components/Empty';
 
 export default function Health() {
   const [articles, setArticles] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    getArticles().then(setArticles);
+    let alive = true;
+    getArticles()
+      .then((list) => alive && setArticles(list))
+      .catch((err) => {
+        console.error('Gagal memuat artikel:', err);
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
     <>
-      <Title
-        title="Ruang Kesehatan 🌷"
-        desc="Informasi ringan untuk membantu kamu merawat diri selama kuliah."
-      />
+      <Title title="Ruang Kesehatan 🌷" desc="Informasi ringan untuk membantu kamu merawat diri selama kuliah." />
       <div className="articles">
         {articles.map((a) => (
           <article className="article" key={a.id}>
@@ -30,13 +38,14 @@ export default function Health() {
           </article>
         ))}
       </div>
+      {!articles.length && (
+        <Empty>{failed ? 'Gagal memuat artikel. Coba muat ulang halaman.' : 'Belum ada artikel kesehatan.'}</Empty>
+      )}
 
       {selected && (
         <Modal title={selected.title} close={() => setSelected(null)}>
           <p className="articlebody">{selected.body || selected.description}</p>
-          <p className="notice">
-            Informasi ini bersifat edukasi umum, bukan pengganti konsultasi tenaga kesehatan.
-          </p>
+          <p className="notice">Informasi ini bersifat edukasi umum, bukan pengganti konsultasi tenaga kesehatan.</p>
         </Modal>
       )}
     </>

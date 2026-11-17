@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { HeartPulse, ArrowUpRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { HeartPulse, ArrowUpRight, GraduationCap, Stethoscope } from 'lucide-react';
+import { useAuth } from '../contexts/auth';
+import { FACULTY_DATA, STAFF_DOMAIN, STUDENT_DOMAIN } from '../constants';
 
-const FACULTY_DATA = {
-  'Fakultas Ekonomi': ['Akuntansi (S1)', 'Manajemen (S1)', 'Sekretaris (D3)'],
-  'Fakultas Filsafat': ['Ilmu Filsafat (S1)', 'Pendidikan Agama (S1)'],
-  'Fakultas Keguruan dan Ilmu Pendidikan': [
-    'Pendidikan Bahasa Inggris (S1)',
-    'Pendidikan Ekonomi (S1)',
-    'Pendidikan Luar Sekolah (S1)',
-  ],
-  'Fakultas Pertanian': ['Agroteknologi (S1)'],
-  'Fakultas Keperawatan': ['Ilmu Keperawatan (S1)'],
-  'Fakultas Ilmu Komputer': ['Sistem Informasi (S1)', 'Informatika (S1)', 'Teknologi Informasi (S1)'],
-  'Fakultas Kedokteran': ['Kedokteran (S1)'],
+const FIREBASE_ERRORS = {
+  'auth/user-not-found': 'Email atau password salah.',
+  'auth/wrong-password': 'Email atau password salah.',
+  'auth/invalid-credential': 'Email atau password salah.',
+  'auth/email-already-in-use': 'Email sudah terdaftar.',
+  'auth/too-many-requests': 'Terlalu banyak percobaan. Coba lagi beberapa saat.',
+  'auth/weak-password': 'Password minimal 6 karakter.',
 };
 
-const EMAIL_DOMAIN = '@student.unklab.ac.id';
+const cleanPrefix = (value) => value.replace(/@.*$/, '').replace(/[^a-zA-Z0-9._-]/g, '');
+
+function EmailPrefixInput({ value, onChange, domain, placeholder }) {
+  return (
+    <div className="email-input">
+      <input
+        required
+        type="text"
+        autoComplete="username"
+        value={value}
+        onChange={(e) => onChange(cleanPrefix(e.target.value))}
+        placeholder={placeholder}
+      />
+      <span className="email-domain">{domain}</span>
+    </div>
+  );
+}
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -25,10 +37,10 @@ export default function Auth() {
   const { login, register } = useAuth();
   const isRegister = location.pathname === '/register';
 
+  const [portal, setPortal] = useState('student');
   const [form, setForm] = useState({
     name: '',
     emailPrefix: '',
-    email: '',
     password: '',
     nim: '',
     faculty: '',
@@ -38,31 +50,27 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
 
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+  const programs = FACULTY_DATA[form.faculty] || [];
+  const isStaffPortal = !isRegister && portal === 'staff';
+  const domain = isStaffPortal ? STAFF_DOMAIN : STUDENT_DOMAIN;
 
-  const programs = form.faculty ? FACULTY_DATA[form.faculty] || [] : [];
+  function switchPortal(next) {
+    setPortal(next);
+    setError('');
+    set('emailPrefix', '');
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
+    const email = form.emailPrefix + domain;
     try {
-      if (isRegister) {
-        const fullEmail = form.emailPrefix + EMAIL_DOMAIN;
-        await register({ ...form, email: fullEmail });
-      } else {
-        await login(form.email, form.password);
-      }
+      if (isRegister) await register({ ...form, email });
+      else await login(email, form.password, portal);
       navigate('/dashboard');
     } catch (err) {
-      const msg =
-        err.code === 'auth/user-not-found' ||
-        err.code === 'auth/wrong-password' ||
-        err.code === 'auth/invalid-credential'
-          ? 'Email atau password salah.'
-          : err.code === 'auth/email-already-in-use'
-          ? 'Email sudah terdaftar.'
-          : err.message || 'Terjadi kesalahan.';
-      setError(msg);
+      setError(FIREBASE_ERRORS[err.code] || err.message || 'Terjadi kesalahan.');
     } finally {
       setLoading(false);
     }
@@ -82,10 +90,35 @@ export default function Auth() {
         <p>
           {isRegister
             ? 'Daftar sebagai mahasiswa Universitas Klabat.'
-            : 'Masuk untuk mengakses layanan kesehatan mahasiswa.'}
+            : isStaffPortal
+              ? 'Masuk sebagai staff atau admin UKESMAS.'
+              : 'Masuk untuk mengakses layanan kesehatan mahasiswa.'}
         </p>
 
-        {error && <div className="demo" style={{ color: '#c77986', borderColor: '#f5d0d4' }}>{error}</div>}
+        {!isRegister && (
+          <div className="auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={portal === 'student'}
+              className={portal === 'student' ? 'active' : ''}
+              onClick={() => switchPortal('student')}
+            >
+              <GraduationCap size={14} /> Mahasiswa
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={portal === 'staff'}
+              className={portal === 'staff' ? 'active' : ''}
+              onClick={() => switchPortal('staff')}
+            >
+              <Stethoscope size={14} /> Staff / Admin
+            </button>
+          </div>
+        )}
+
+        {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="form">
           {isRegister && (
@@ -96,17 +129,20 @@ export default function Auth() {
               </label>
               <label>
                 NIM
-                <input required value={form.nim} onChange={(e) => set('nim', e.target.value)} placeholder="Contoh: 12410056" />
+                <input
+                  required
+                  inputMode="numeric"
+                  value={form.nim}
+                  onChange={(e) => set('nim', e.target.value.replace(/\D/g, ''))}
+                  placeholder="1050...."
+                />
               </label>
               <label>
                 Fakultas
                 <select
                   required
                   value={form.faculty}
-                  onChange={(e) => {
-                    set('faculty', e.target.value);
-                    set('program', '');
-                  }}
+                  onChange={(e) => setForm((prev) => ({ ...prev, faculty: e.target.value, program: '' }))}
                 >
                   <option value="">Pilih fakultas</option>
                   {Object.keys(FACULTY_DATA).map((f) => (
@@ -131,32 +167,15 @@ export default function Auth() {
             </>
           )}
 
-          {isRegister ? (
-            <label>
-              Email mahasiswa
-              <div className="email-input">
-                <input
-                  required
-                  type="text"
-                  value={form.emailPrefix}
-                  onChange={(e) => set('emailPrefix', e.target.value.replace(/[^a-zA-Z0-9._-]/g, ''))}
-                  placeholder="12410056"
-                />
-                <span className="email-domain">{EMAIL_DOMAIN}</span>
-              </div>
-            </label>
-          ) : (
-            <label>
-              Email mahasiswa
-              <input
-                required
-                type="email"
-                value={form.email}
-                onChange={(e) => set('email', e.target.value)}
-                placeholder="12410056@student.unklab.ac.id"
-              />
-            </label>
-          )}
+          <label>
+            {isStaffPortal ? 'Email staff' : 'Email mahasiswa'}
+            <EmailPrefixInput
+              value={form.emailPrefix}
+              onChange={(v) => set('emailPrefix', v)}
+              domain={domain}
+              placeholder={isStaffPortal ? 'nama' : 'noreg'}
+            />
+          </label>
 
           <label>
             Password
@@ -164,6 +183,7 @@ export default function Auth() {
               required
               type="password"
               minLength="6"
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
               value={form.password}
               onChange={(e) => set('password', e.target.value)}
             />
@@ -174,12 +194,16 @@ export default function Auth() {
           </button>
         </form>
 
-        <p className="switch">
-          {isRegister ? 'Sudah punya akun?' : 'Belum punya akun?'}{' '}
-          <button onClick={() => navigate(isRegister ? '/login' : '/register')}>
-            {isRegister ? 'Masuk' : 'Daftar'}
-          </button>
-        </p>
+        {isStaffPortal ? (
+          <p className="switch">Akun staff dibuat oleh Head Admin UKESMAS.</p>
+        ) : (
+          <p className="switch">
+            {isRegister ? 'Sudah punya akun?' : 'Belum punya akun?'}{' '}
+            <button onClick={() => navigate(isRegister ? '/login' : '/register')}>
+              {isRegister ? 'Masuk' : 'Daftar'}
+            </button>
+          </p>
+        )}
         <small className="disclaimer">Prototype akademik. Gunakan data fiktif.</small>
       </div>
       <div className="authart">

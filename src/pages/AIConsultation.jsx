@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Sparkles, ShieldCheck, CheckCircle2, Loader, AlertTriangle, MapPin } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
 import { askAI } from '../services/ai';
-import { createAppointment } from '../services/firestore';
+import { createEmergency } from '../services/emergency';
 import Title from '../components/Title';
 import Modal from '../components/Modal';
 
@@ -42,19 +42,12 @@ export default function AIConsultation() {
     if (!location.trim()) return;
     setSendingUrgent(true);
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
-      await createAppointment({
-        userId: profile.id,
-        studentName: profile.name || '',
-        nim: profile.nim || '',
-        service: 'Konsultasi Darurat',
-        date: today,
-        time: now,
-        note: `[URGENT] Keluhan: ${symptom}\nLokasi: ${location}`,
-        status: 'Urgent',
-        priority: 'urgent',
-        location,
+      await createEmergency({
+        reporter: profile,
+        victimType: 'self',
+        description: symptom,
+        locationDetail: location,
+        source: 'ai',
         aiSummary: answer?.text?.slice(0, 200) || '',
       });
       setUrgentSent(true);

@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, CalendarDays } from 'lucide-react';
 
 export default function Modal({ title, close, children }) {

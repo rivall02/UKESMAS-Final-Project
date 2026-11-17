@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -6,88 +6,112 @@ import {
   signOut,
   updateProfile,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-
-const AuthContext = createContext(null);
-
-export function useAuth() {
-  return useContext(AuthContext);
-}
+import { ROLES, STAFF_ROLES } from '../constants';
+import { getUser, upsertDirectory } from '../services/users';
+import { AuthContext } from './auth';
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const busy = useRef(false);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (snap.exists()) {
-          setProfile({ id: firebaseUser.uid, ...snap.data() });
-        } else {
-          setProfile({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email,
-            email: firebaseUser.email,
-            role: 'student',
-          });
+  useEffect(
+    () =>
+      onAuthStateChanged(auth, async (firebaseUser) => {
+        if (busy.current) return;
+        if (!firebaseUser) {
+          setProfile(null);
+          setLoading(false);
+          return;
         }
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
+        try {
+          const p = await getUser(firebaseUser.uid);
+          if (!p || p.disabled) {
+            await signOut(auth);
+            setProfile(null);
+          } else {
+            setProfile(p);
+          }
+        } catch (err) {
+          console.error('Gagal memuat profil:', err);
+          setProfile(null);
+        }
+        setLoading(false);
+      }),
+    [],
+  );
 
-  async function login(email, password) {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    const snap = await getDoc(doc(db, 'users', cred.user.uid));
-    const data = snap.exists() ? snap.data() : {};
-    setProfile({ id: cred.user.uid, ...data });
-    return { id: cred.user.uid, ...data };
+  async function login(email, password, portal) {
+    busy.current = true;
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const p = await getUser(cred.user.uid);
+      const staffAccount = p && STAFF_ROLES.includes(p.role);
+      let error = '';
+      if (!p) error = 'Data akun tidak ditemukan. Hubungi petugas UKESMAS.';
+      else if (p.disabled) error = 'Akun ini dinonaktifkan. Hubungi petugas UKESMAS.';
+      else if (portal === 'student' && staffAccount) error = 'Ini akun staff. Silakan masuk lewat tab Staff/Admin.';
+      else if (portal === 'staff' && !staffAccount) error = 'Ini akun mahasiswa. Silakan masuk lewat tab Mahasiswa.';
+      if (error) {
+        await signOut(auth);
+        throw new Error(error);
+      }
+      if (p.role === ROLES.STUDENT) await upsertDirectory(p.id, p);
+      setProfile(p);
+      return p;
+    } finally {
+      busy.current = false;
+    }
   }
 
   async function register({ name, email, password, nim, faculty, program }) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-    const userData = {
-      name,
-      email,
-      role: 'student',
-      nim,
-      faculty,
-      program,
-      createdAt: new Date().toISOString(),
-    };
-    await setDoc(doc(db, 'users', cred.user.uid), userData);
-    setProfile({ id: cred.user.uid, ...userData });
-    return { id: cred.user.uid, ...userData };
+    busy.current = true;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+      const userData = {
+        name,
+        email,
+        role: ROLES.STUDENT,
+        nim,
+        faculty,
+        program,
+        disabled: false,
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(doc(db, 'users', cred.user.uid), userData);
+      await upsertDirectory(cred.user.uid, userData);
+      const p = { id: cred.user.uid, ...userData };
+      setProfile(p);
+      return p;
+    } finally {
+      busy.current = false;
+    }
+  }
+
+  async function logout() {
+    await signOut(auth);
+    setProfile(null);
   }
 
   function refreshProfile(data) {
     setProfile((prev) => ({ ...prev, ...data }));
   }
 
-  async function logout() {
-    await signOut(auth);
-    setUser(null);
-    setProfile(null);
-  }
-
+  const role = profile?.role;
   const value = {
-    user,
     profile,
     loading,
     login,
     register,
     logout,
     refreshProfile,
-    isAdmin: profile?.role === 'admin',
+    role,
+    isStudent: role === ROLES.STUDENT,
+    isStaff: STAFF_ROLES.includes(role),
+    isAdmin: role === ROLES.ADMIN,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
