@@ -71,12 +71,11 @@ export async function searchDirectory(term) {
     .slice(0, 10);
 }
 
-export async function createStaffAccount({ name, staffCode, role, phone, email }) {
+export async function createStaffAccount({ name, staffCode, role, phone, email, password }) {
   const secondary = initializeApp(firebaseConfig, `staff-creator-${Date.now()}`);
   const secondaryAuth = getAuth(secondary);
   try {
-    const tempPassword = `${crypto.randomUUID()}Aa1!`;
-    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPassword);
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     await setDoc(doc(db, 'users', cred.user.uid), {
       name,
       staffCode,
@@ -86,9 +85,21 @@ export async function createStaffAccount({ name, staffCode, role, phone, email }
       disabled: false,
       createdAt: new Date().toISOString(),
     });
-    await sendPasswordResetEmail(secondaryAuth, email);
     await signOut(secondaryAuth);
     return cred.user.uid;
+  } finally {
+    await deleteApp(secondary);
+  }
+}
+
+export async function updateStaffAccount(id, { name, staffCode, role, phone }) {
+  await updateDoc(doc(db, 'users', id), { name, staffCode, role, phone });
+}
+
+export async function sendStaffPasswordReset(email) {
+  const secondary = initializeApp(firebaseConfig, `staff-reset-${Date.now()}`);
+  try {
+    await sendPasswordResetEmail(getAuth(secondary), email);
   } finally {
     await deleteApp(secondary);
   }
