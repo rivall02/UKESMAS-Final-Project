@@ -1,3 +1,14 @@
+import {
+  collection,
+  addDoc,
+  getDocs,
+  writeBatch,
+  query,
+  orderBy,
+  onSnapshot,
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+
 const API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
@@ -25,7 +36,7 @@ Dimana level adalah:
 Contoh: jika mahasiswa bilang "saya merasa ingin mengakhiri hidup" → jawab dengan empati dan sumber bantuan, lalu akhiri dengan [URGENCY:HIGH]
 Contoh: jika mahasiswa tanya "tips tidur nyenyak" → jawab tips, lalu akhiri dengan [URGENCY:LOW]`;
 
-async function callModel(model, question) {
+async function callModel(model, messages) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -40,12 +51,9 @@ async function callModel(model, question) {
       body: JSON.stringify({
         model,
         reasoning_effort: 'low',
-        max_completion_tokens: 1500,
+        max_completion_tokens: 1000,
         temperature: 0.6,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: question },
-        ],
+        messages,
       }),
     });
 
@@ -60,11 +68,30 @@ async function callModel(model, question) {
   }
 }
 
-export async function askAI(question) {
+export async function askAI(messages) {
+  const messageList = Array.isArray(messages)
+    ? messages
+    : [{ role: 'user', content: String(messages || '') }];
+
+  const payload = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...messageList.slice(-10).map((m) => {
+      const isAssistant = m.role === 'assistant';
+      let content = m.content || '';
+      if (isAssistant && m.urgency) {
+        content = `${content}\n[URGENCY:${m.urgency}]`;
+      }
+      return {
+        role: isAssistant ? 'assistant' : 'user',
+        content,
+      };
+    }),
+  ];
+
   let lastError;
   for (const model of MODELS) {
     try {
-      return parseResponse(await callModel(model, question));
+      return parseResponse(await callModel(model, payload));
     } catch (err) {
       console.warn(`${model} gagal:`, err.message);
       lastError = err;
@@ -77,7 +104,45 @@ function parseResponse(text) {
   const pattern = /\[URGENCY:\s*(LOW|MEDIUM|HIGH)\]\s*$/i;
   const match = text.match(pattern);
   const urgency = match ? match[1].toUpperCase() : 'LOW';
-  const cleanText = text.replace(pattern, '').replace(/\*\*/g, '').trim();
+  const cleanText = text.replace(pattern, '').trim();
 
   return { text: cleanText, urgency, isUrgent: urgency === 'HIGH' };
+}
+
+export function subscribeChat(uid, cb, onError) {
+  if (!uid) return () => {};
+  const colRef = collection(db, 'aiChats', uid, 'messages');
+  const q = query(colRef, orderBy('createdAt', 'asc'));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      cb(list);
+    },
+    onError,
+  );
+}
+
+export async function addChatMessage(uid, { role, content, urgency = null }) {
+  if (!uid) return;
+  const colRef = collection(db, 'aiChats', uid, 'messages');
+  await addDoc(colRef, {
+    role,
+    content,
+    urgency: urgency || null,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+export async function clearChat(uid) {
+  if (!uid) return;
+  const colRef = collection(db, 'aiChats', uid, 'messages');
+  const snap = await getDocs(colRef);
+  if (snap.empty) return;
+
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => {
+    batch.delete(d.ref);
+  });
+  await batch.commit();
 }

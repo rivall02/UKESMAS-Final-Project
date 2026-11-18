@@ -1,6 +1,6 @@
 import { collection, doc, updateDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { ACTIVE_EMERGENCY_STATUSES } from '../constants';
+import { ACTIVE_EMERGENCY_STATUSES, STATUS } from '../constants';
 import { sortByDateTimeDesc } from '../utils/date';
 import { notifyStatusChange } from './notifications';
 
@@ -24,4 +24,16 @@ export async function setEmergencyStatus(appointment, status, staff) {
     handledBy: staff ? { id: staff.id, name: staff.name } : null,
   });
   await notifyStatusChange(appointment, status);
+}
+
+export async function referEmergency(appointment, hospitalName, staff) {
+  await updateDoc(doc(db, 'appointments', appointment.id), {
+    status: STATUS.DIRUJUK,
+    referral: {
+      hospital: hospitalName,
+      at: new Date().toISOString(),
+    },
+    handledBy: staff ? { id: staff.id, name: staff.name } : null,
+  });
+  await notifyStatusChange(appointment, STATUS.DIRUJUK);
 }
