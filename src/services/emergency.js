@@ -7,6 +7,7 @@ import {
   query,
   where,
   serverTimestamp,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { CANCELLABLE_STATUSES, MERGE_WINDOW, STATUS } from '../constants';
@@ -83,3 +84,51 @@ export async function createEmergency({
   });
   return { id: ref.id, merged: false };
 }
+
+export async function updateEmergencyDetails(id, { emergencyNote, locationDetail, location, ambulanceRequested } = {}) {
+  const updates = {};
+  if (emergencyNote !== undefined) updates.emergencyNote = emergencyNote;
+  if (locationDetail !== undefined) updates.locationDetail = locationDetail;
+  if (location !== undefined) updates.location = location;
+  if (ambulanceRequested !== undefined) updates.ambulanceRequested = ambulanceRequested;
+
+  if (Object.keys(updates).length > 0) {
+    await updateDoc(doc(db, 'appointments', id), updates);
+  }
+}
+
+export function subscribeEmergency(id, onChange, onError) {
+  return onSnapshot(
+    doc(db, 'appointments', id),
+    (snap) => {
+      if (snap.exists()) {
+        onChange({ id: snap.id, ...snap.data() });
+      } else {
+        onChange(null);
+      }
+    },
+    onError,
+  );
+}
+
+export function getCurrentLocation() {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        });
+      },
+      () => {
+        resolve(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  });
+}
+
