@@ -17,6 +17,7 @@ import AIConsultation from './pages/AIConsultation';
 import Profile from './pages/Profile';
 import Sos from './pages/Sos';
 import ManageStaff from './pages/ManageStaff';
+import Settings from './pages/Settings';
 
 const Loading = () => <div className="empty" style={{ padding: 60 }}>Memuat...</div>;
 
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/records" element={<Records />} />
         <Route path="/health" element={<Health />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
 
         <Route element={<RequireRole allow={[ROLES.STUDENT]} />}>
           <Route path="/ai" element={<AIConsultation />} />

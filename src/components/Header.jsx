@@ -12,6 +12,7 @@ const pageNames = {
   '/ai': 'Konsultasi AI',
   '/sos': 'SOS Darurat',
   '/profile': 'Profil',
+  '/settings': 'Pengaturan',
   '/staff': 'Kelola Staff',
 };
 

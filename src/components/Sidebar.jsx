@@ -12,9 +12,11 @@ import {
   UserCircle,
   Siren,
   UserCog,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../contexts/auth';
 import { ROLE_LABELS } from '../constants';
+import BrandLogo from './BrandLogo';
 
 const studentNav = [
   { label: 'Dashboard', icon: Activity, path: '/dashboard' },
@@ -24,6 +26,7 @@ const studentNav = [
   { label: 'Konsultasi AI', icon: Sparkles, path: '/ai' },
   { label: 'SOS Darurat', icon: Siren, path: '/sos' },
   { label: 'Profil', icon: UserCircle, path: '/profile' },
+  { label: 'Pengaturan', icon: Settings, path: '/settings' },
 ];
 
 const staffNav = [
@@ -33,12 +36,13 @@ const staffNav = [
   { label: 'Rekam Medis', icon: ClipboardList, path: '/records' },
   { label: 'Edukasi', icon: BookHeart, path: '/health' },
   { label: 'Profil', icon: UserCircle, path: '/profile' },
+  { label: 'Pengaturan', icon: Settings, path: '/settings' },
 ];
 
 const adminNav = [
   ...staffNav.slice(0, 5),
   { label: 'Kelola Staff', icon: UserCog, path: '/staff' },
-  staffNav[5],
+  ...staffNav.slice(5),
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -48,7 +52,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <aside className={open ? 'side open' : 'side'}>
       <div className="brand">
-        <i><HeartPulse /></i>
+        <BrandLogo />
         <b>UKESMAS<small>UNIVERSITAS KLABAT</small></b>
         <button className="close" onClick={onClose}><X /></button>
       </div>

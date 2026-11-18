@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   ArrowUpRight,
 } from 'lucide-react';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function Landing() {
     <div className="landing">
       <header className="landnav">
         <div className="brand">
-          <i><HeartPulse /></i>
+          <BrandLogo />
           <b>UKESMAS<small>UNIVERSITAS KLABAT</small></b>
         </div>
         <nav>

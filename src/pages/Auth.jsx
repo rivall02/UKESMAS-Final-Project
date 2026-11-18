@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { HeartPulse, ArrowUpRight, GraduationCap, Stethoscope } from 'lucide-react';
 import { useAuth } from '../contexts/auth';
 import { FACULTY_DATA, STAFF_DOMAIN, STUDENT_DOMAIN } from '../constants';
+import BrandLogo from '../components/BrandLogo';
 
 const FIREBASE_ERRORS = {
   'auth/user-not-found': 'Email atau password salah.',
@@ -83,7 +84,7 @@ export default function Auth() {
           ← Kembali ke halaman depan
         </button>
         <div className="brand">
-          <i><HeartPulse /></i>
+          <BrandLogo />
           <b>UKESMAS<small>UNIVERSITAS KLABAT</small></b>
         </div>
         <h1>{isRegister ? 'Buat akun UKESMAS' : 'Selamat datang kembali!'}</h1>

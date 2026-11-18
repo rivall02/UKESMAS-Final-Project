@@ -1,0 +1,82 @@
+.set-panel h3 {
+  font-size: 14px;
+}
+
+.set-desc {
+  font-size: 10px;
+  color: #a38d99;
+  margin: 6px 0 18px;
+  line-height: 1.6;
+}
+
+.set-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.set-swatch {
+  border: 0;
+  background: none;
+  padding: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.set-swatch-dot {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e8d8df;
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 4px transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.set-swatch:hover .set-swatch-dot {
+  transform: scale(1.06);
+}
+
+.set-swatch.selected .set-swatch-dot {
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px #c85f88;
+}
+
+.set-swatch:focus-visible {
+  outline: none;
+}
+
+.set-swatch:focus-visible .set-swatch-dot {
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px #8f7a86;
+}
+
+.set-swatch small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #806b78;
+}
+
+.set-swatch.selected small {
+  color: #c85f88;
+  font-weight: 700;
+}
+
+.set-current {
+  margin: 20px 0 0;
+  font-size: 10px;
+  color: #8c7783;
+}
+
+@media (max-width: 520px) {
+  .set-swatches {
+    gap: 14px;
+    justify-content: space-between;
+  }
+  .set-swatch-dot {
+    width: 38px;
+    height: 38px;
+  }
+}
