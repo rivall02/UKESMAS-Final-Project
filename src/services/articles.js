@@ -71,10 +71,10 @@ export async function deleteArticle(id) {
 
 export async function getDailyTip() {
   const list = await getArticles();
-  const tips = list.filter((a) => a.isTip);
+  const today = todayWITA();
+  const tips = list.filter((a) => a.isTip && (!a.tipDate || a.tipDate <= today));
   if (tips.length === 0) return null;
 
-  const today = todayWITA();
   const todayTip = tips.find((a) => a.tipDate === today);
   if (todayTip) return todayTip;
 

@@ -15,6 +15,8 @@ import '../styles/health.css';
 
 const DEFAULT_CATEGORIES = ['Semua', 'Umum', 'Gizi', 'Kesehatan Mental', 'Pola Hidup'];
 
+const categoryKey = (value) => (value || '').trim().toLowerCase();
+
 function initialArticleForm(article = null) {
   return {
     title: article?.title || '',
@@ -55,6 +57,24 @@ export default function Health() {
 
   const setFormField = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
+  const categoryMap = new Map();
+  for (const c of [...DEFAULT_CATEGORIES.slice(1), ...articles.map((a) => a.category)]) {
+    const label = (c || '').trim();
+    if (label && !categoryMap.has(categoryKey(label))) categoryMap.set(categoryKey(label), label);
+  }
+  const categoryOptions = [...categoryMap.values()];
+  const categoryList = ['Semua', ...categoryOptions];
+
+  const filteredArticles =
+    category === 'Semua'
+      ? articles
+      : articles.filter((a) => categoryKey(a.category) === categoryKey(category));
+
+  function normalizeCategory(value) {
+    const label = value.trim();
+    return categoryMap.get(categoryKey(label)) || label;
+  }
+
   function handleOpenCreate() {
     setEditingArticle(null);
     setForm(initialArticleForm(null));
@@ -88,11 +108,12 @@ export default function Health() {
     }
 
     setSubmitting(true);
+    const categoryLabel = normalizeCategory(form.category);
     try {
       if (editingArticle) {
         await updateArticle(editingArticle.id, {
           title: form.title,
-          category: form.category,
+          category: categoryLabel,
           emoji: form.emoji,
           description: form.description,
           body: form.body,
@@ -102,7 +123,7 @@ export default function Health() {
       } else {
         await createArticle({
           title: form.title,
-          category: form.category,
+          category: categoryLabel,
           emoji: form.emoji,
           description: form.description,
           body: form.body,
@@ -122,13 +143,6 @@ export default function Health() {
       setSubmitting(false);
     }
   }
-
-  const categoryList = Array.from(
-    new Set([...DEFAULT_CATEGORIES, ...articles.map((a) => a.category).filter(Boolean)]),
-  );
-
-  const filteredArticles =
-    category === 'Semua' ? articles : articles.filter((a) => a.category === category);
 
   return (
     <>
@@ -207,7 +221,9 @@ export default function Health() {
         <Empty>
           {failed
             ? 'Gagal memuat artikel. Coba muat ulang halaman.'
-            : 'Belum ada artikel kesehatan.'}
+            : articles.length
+              ? 'Belum ada artikel di kategori ini.'
+              : 'Belum ada artikel kesehatan.'}
         </Empty>
       )}
 
@@ -253,10 +269,16 @@ export default function Health() {
               Kategori
               <input
                 required
+                list="hl-category-options"
                 value={form.category}
                 onChange={(e) => setFormField('category', e.target.value)}
                 placeholder="Umum, Gizi, Mental, Fisik, dll."
               />
+              <datalist id="hl-category-options">
+                {categoryOptions.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </label>
 
             <label>
