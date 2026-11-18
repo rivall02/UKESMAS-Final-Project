@@ -4,7 +4,9 @@ import { RECORD_SERVICES, STATUS } from '../constants';
 import { createRecord } from '../services/records';
 import { updateAppointmentStatus } from '../services/appointments';
 import { notifyStatusChange } from '../services/notifications';
+import { formatDate } from '../utils/date';
 import Modal from './Modal';
+import '../styles/records.css';
 
 export default function RecordModal({ appointment, onClose }) {
   const { profile } = useAuth();
@@ -42,8 +44,20 @@ export default function RecordModal({ appointment, onClose }) {
   }
 
   return (
-    <Modal title={`Rekam Medis — ${appointment.studentName}`} close={onClose}>
+    <Modal title={`Rekam Medis — ${appointment.studentName || 'Mahasiswa'}`} close={onClose}>
       <form className="form" onSubmit={handleSubmit}>
+        <div className="rec-detail-row">
+          <span className="rec-detail-label">Jadwal Janji</span>
+          <span className="rec-detail-value">
+            {formatDate(appointment.date)} {appointment.time ? `· ${appointment.time} WITA` : ''}
+          </span>
+        </div>
+        {appointment.nim && (
+          <div className="rec-detail-row">
+            <span className="rec-detail-label">NIM Pasien</span>
+            <span className="rec-detail-value">{appointment.nim}</span>
+          </div>
+        )}
         <label>
           Layanan
           <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}>
@@ -59,7 +73,7 @@ export default function RecordModal({ appointment, onClose }) {
             rows="4"
             value={form.summary}
             onChange={(e) => setForm({ ...form, summary: e.target.value })}
-            placeholder="Tuliskan hasil pemeriksaan dan catatan..."
+            placeholder="Tuliskan hasil pemeriksaan, diagnosa, dan tindakan medis..."
           />
         </label>
         <button className="primary" disabled={saving}>
