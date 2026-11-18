@@ -12,7 +12,6 @@ export default function OtherPersonForm({ onSubmit, loading }) {
   const [externalName, setExternalName] = useState('');
   const [locationDetail, setLocationDetail] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedHospital, setSelectedHospital] = useState(null);
   const [ambulanceRequested, setAmbulanceRequested] = useState(false);
   const [error, setError] = useState('');
 
@@ -85,15 +84,11 @@ export default function OtherPersonForm({ onSubmit, loading }) {
         ? { id: selectedStudent.id, name: selectedStudent.name, nim: selectedStudent.nim }
         : { id: null, name: externalName.trim() || 'Bukan mahasiswa', nim: '' };
 
-    const finalDescription = selectedHospital
-      ? `${description.trim()} (Pilihan RS Rujukan: ${selectedHospital})`
-      : description.trim();
-
     onSubmit({
       victimType: subType,
       victim,
       locationDetail: locationDetail.trim(),
-      description: finalDescription,
+      description: description.trim(),
       ambulanceRequested,
     });
   }
@@ -220,36 +215,23 @@ export default function OtherPersonForm({ onSubmit, loading }) {
 
       <div className="sos-hospitals-section">
         <h4>Rumah Sakit Rujukan Sekitar Kampus:</h4>
-        <small style={{ color: '#a58f9c', fontSize: '9px', margin: '-4px 0 2px' }}>
-          (Klik rumah sakit jika ingin memilih RS rujukan yang diinginkan)
-        </small>
         <div className="sos-hospital-list">
-          {HOSPITALS.map((h) => {
-            const isSelected = selectedHospital === h.name;
-            return (
-              <div
-                key={h.name}
-                className={`sos-hospital-item ${h.main ? 'main-rs' : ''} ${isSelected ? 'selected' : ''}`}
-                onClick={() => setSelectedHospital(isSelected ? null : h.name)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="sos-hospital-info">
-                  <span className="sos-hospital-name">{h.name}</span>
-                  {h.main && <span className="sos-main-badge">Rujukan Utama</span>}
-                  {isSelected && <span className="sos-chosen-badge">Dipilih</span>}
-                </div>
-                <a
-                  href={mapsSearchUrl(h.name)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="sos-hospital-link"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MapPin size={12} /> Buka Maps <ExternalLink size={10} />
-                </a>
+          {HOSPITALS.map((h) => (
+            <div key={h.name} className={`sos-hospital-item ${h.main ? 'main-rs' : ''}`}>
+              <div className="sos-hospital-info">
+                <span className="sos-hospital-name">{h.name}</span>
+                {h.main && <span className="sos-main-badge">Rujukan Utama</span>}
               </div>
-            );
-          })}
+              <a
+                href={mapsSearchUrl(h.name)}
+                target="_blank"
+                rel="noreferrer"
+                className="sos-hospital-link"
+              >
+                <MapPin size={12} /> Buka Maps <ExternalLink size={10} />
+              </a>
+            </div>
+          ))}
         </div>
       </div>
 
