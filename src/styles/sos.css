@@ -489,6 +489,22 @@
   border-color: #ffa39e;
 }
 
+.sos-hospital-item.selected {
+  background: #fff0f4;
+  border-color: #ff4d4f;
+  box-shadow: 0 3px 12px rgba(255, 77, 79, 0.18);
+}
+
+.sos-chosen-badge {
+  background: #52c41a;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
 .sos-hospital-info {
   display: flex;
   align-items: center;
