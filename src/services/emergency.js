@@ -10,7 +10,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { CANCELLABLE_STATUSES, MERGE_WINDOW, STATUS } from '../constants';
+import { ACTIVE_EMERGENCY_STATUSES, CANCELLABLE_STATUSES, MERGE_WINDOW, STATUS } from '../constants';
 import { nowTimeWITA, todayWITA, toMinutes } from '../utils/date';
 import { releaseSlot } from './appointments';
 
@@ -95,6 +95,16 @@ export async function updateEmergencyDetails(id, { emergencyNote, locationDetail
   if (Object.keys(updates).length > 0) {
     await updateDoc(doc(db, 'appointments', id), updates);
   }
+}
+
+export async function getActiveEmergency(reporterId) {
+  if (!reporterId) return null;
+  const snap = await getDocs(query(col, where('reporterId', '==', reporterId)));
+  const active = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((a) => a.priority === 'urgent' && ACTIVE_EMERGENCY_STATUSES.includes(a.status))
+    .sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+  return active[0] || null;
 }
 
 export function subscribeEmergency(id, onChange, onError) {

@@ -181,6 +181,7 @@
   padding: 8px 10px;
   font-size: 11px;
   color: #7d6573;
+  white-space: pre-wrap;
 }
 
 .emg-actions {

@@ -3,9 +3,10 @@ import { useLocation } from 'react-router-dom';
 import { Siren, User, Users, AlertCircle, Bot } from 'lucide-react';
 import Title from '../components/Title';
 import { useAuth } from '../contexts/auth';
-import { STATUS } from '../constants';
+import { ACTIVE_EMERGENCY_STATUSES } from '../constants';
 import {
   createEmergency,
+  getActiveEmergency,
   subscribeEmergency,
   getCurrentLocation,
 } from '../services/emergency';
@@ -26,16 +27,39 @@ export default function Sos() {
   const [emergencyDoc, setEmergencyDoc] = useState(null);
   const [merged, setMerged] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   const sirenRef = useRef(null);
 
-  const isCompleted = emergencyDoc?.status === STATUS.SELESAI;
+  // Selesai dan Dirujuk sama-sama akhir laporan: sirene, wake lock, dan peringatan tab dimatikan.
+  const isCompleted = Boolean(emergencyDoc) && !ACTIVE_EMERGENCY_STATUSES.includes(emergencyDoc.status);
 
   useEffect(() => {
     return () => {
       sirenRef.current?.stop();
     };
   }, []);
+
+  // Pulihkan SOS yang masih aktif setelah halaman di-refresh agar tidak terkirim dobel.
+  useEffect(() => {
+    let active = true;
+    getActiveEmergency(profile.id)
+      .then((found) => {
+        if (active && found) {
+          setEmergencyId(found.id);
+          setEmergencyDoc(found);
+          // Browser tidak mengizinkan suara tanpa sentuhan, jadi sirene menunggu tombol "Bunyikan lagi".
+          setIsMuted(true);
+        }
+      })
+      .catch((err) => console.error('Gagal memeriksa SOS aktif:', err))
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [profile.id]);
 
   useEffect(() => {
     if (!emergencyId) return;
@@ -44,8 +68,9 @@ export default function Sos() {
       emergencyId,
       (data) => {
         setEmergencyDoc(data);
-        if (data?.status === STATUS.SELESAI) {
+        if (!data || !ACTIVE_EMERGENCY_STATUSES.includes(data.status)) {
           sirenRef.current?.stop();
+          sirenRef.current = null;
         }
       },
       (err) => {
@@ -107,7 +132,15 @@ export default function Sos() {
   }, [emergencyId, isCompleted]);
 
   function handleToggleSound() {
-    if (!sirenRef.current) return;
+    if (isCompleted) return;
+    if (!sirenRef.current) {
+      // SOS hasil pemulihan setelah refresh: sirene baru dibuat saat tombol disentuh.
+      const siren = createSirenController();
+      sirenRef.current = siren;
+      siren.start();
+      setIsMuted(false);
+      return;
+    }
     if (isMuted) {
       sirenRef.current.unmute();
       setIsMuted(false);
@@ -267,16 +300,16 @@ export default function Sos() {
               type="button"
               className="sos-giant-btn"
               onClick={handleSendSelf}
-              disabled={loading}
+              disabled={loading || checking}
               aria-label="Kirim SOS Darurat Sekarang"
             >
               <Siren size={54} />
-              <span>{loading ? 'MENGIRIM...' : 'KIRIM SOS'}</span>
+              <span>{loading ? 'MENGIRIM...' : checking ? 'MEMERIKSA...' : 'KIRIM SOS'}</span>
               <span className="sos-giant-sub">Sentuh Sekali</span>
             </button>
           </div>
         ) : (
-          <OtherPersonForm onSubmit={handleSendOther} loading={loading} />
+          <OtherPersonForm onSubmit={handleSendOther} loading={loading || checking} />
         )}
       </div>
     </>

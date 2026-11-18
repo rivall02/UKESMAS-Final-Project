@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { STATUS, mapsPointUrl } from '../../constants';
 import { updateEmergencyDetails } from '../../services/emergency';
+import { nowTimeWITA } from '../../utils/date';
 
 export default function ActiveSos({
   emergencyDoc,
@@ -30,6 +31,7 @@ export default function ActiveSos({
   const isDitangani = status === STATUS.DITANGANI;
   const isDirujuk = status === STATUS.DIRUJUK;
   const isSelesai = status === STATUS.SELESAI;
+  const isFinished = isSelesai || isDirujuk;
 
   async function handleSaveDetails(e) {
     e.preventDefault();
@@ -38,7 +40,12 @@ export default function ActiveSos({
     setSavedSuccess(false);
 
     const payload = {};
-    if (note.trim()) payload.emergencyNote = note.trim();
+    if (note.trim()) {
+      // Tambahkan di bawah keluhan awal (termasuk keluhan dari AI), jangan ditimpa.
+      const previous = (emergencyDoc.emergencyNote || '').trim();
+      const addition = `Tambahan (${nowTimeWITA()} WITA): ${note.trim()}`;
+      payload.emergencyNote = previous ? `${previous}\n${addition}` : addition;
+    }
     if (locDetail.trim()) payload.locationDetail = locDetail.trim();
 
     if (Object.keys(payload).length === 0) return;
@@ -46,6 +53,8 @@ export default function ActiveSos({
     setSaving(true);
     try {
       await updateEmergencyDetails(emergencyDoc.id, payload);
+      setNote('');
+      setLocDetail('');
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err) {
@@ -120,7 +129,7 @@ export default function ActiveSos({
 
   return (
     <div className="sos-container">
-      {!isSelesai && (
+      {!isFinished && (
         <div className="sos-banner-alert">
           <div className="sos-banner-icon">
             <AlertTriangle size={24} color="#fff" />
@@ -140,7 +149,7 @@ export default function ActiveSos({
         <div className="sos-status-header">
           {renderStatusBadge()}
 
-          {!isSelesai && (
+          {!isFinished && (
             <button
               type="button"
               className={`sos-sound-toggle-btn ${isMuted ? 'muted' : 'active'}`}
@@ -202,7 +211,7 @@ export default function ActiveSos({
           {emergencyDoc?.emergencyNote && (
             <div className="sos-detail-row">
               <span className="sos-detail-label">Keterangan:</span>
-              <span className="sos-detail-val">{emergencyDoc.emergencyNote}</span>
+              <span className="sos-detail-val" style={{ whiteSpace: 'pre-wrap' }}>{emergencyDoc.emergencyNote}</span>
             </div>
           )}
 
