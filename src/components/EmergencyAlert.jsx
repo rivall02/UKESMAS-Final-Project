@@ -18,13 +18,7 @@ export default function EmergencyAlert() {
 
   const [activeEmergencies, setActiveEmergencies] = useState([]);
   const [dismissedIds, setDismissedIds] = useState(() => new Set());
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    try {
-      return sessionStorage.getItem('ukesmas_alarm_sound') === 'enabled';
-    } catch {
-      return false;
-    }
-  });
+  const [audioRunning, setAudioRunning] = useState(false);
 
   const audioCtxRef = useRef(null);
   const oscillatorRef = useRef(null);
@@ -42,6 +36,54 @@ export default function EmergencyAlert() {
     }
     return audioCtxRef.current;
   }, []);
+
+  // Monitor AudioContext state and attach one-time unlock listener if previously enabled
+  useEffect(() => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    setAudioRunning(ctx.state === 'running');
+
+    const handleStateChange = () => {
+      setAudioRunning(ctx.state === 'running');
+    };
+    ctx.addEventListener('statechange', handleStateChange);
+
+    const isSoundStored = () => {
+      try {
+        return sessionStorage.getItem('ukesmas_alarm_sound') === 'enabled';
+      } catch {
+        return false;
+      }
+    };
+
+    let removeUnlock = null;
+    if (ctx.state !== 'running' && isSoundStored()) {
+      const unlock = async () => {
+        try {
+          if (ctx.state !== 'running') {
+            await ctx.resume();
+          }
+        } catch (err) {
+          console.warn('Gagal resume AudioContext:', err);
+        }
+      };
+
+      const opts = { once: true, passive: true };
+      document.addEventListener('pointerdown', unlock, opts);
+      document.addEventListener('keydown', unlock, opts);
+
+      removeUnlock = () => {
+        document.removeEventListener('pointerdown', unlock);
+        document.removeEventListener('keydown', unlock);
+      };
+    }
+
+    return () => {
+      ctx.removeEventListener('statechange', handleStateChange);
+      if (removeUnlock) removeUnlock();
+    };
+  }, [getAudioContext]);
 
   const stopAlarmSound = useCallback(() => {
     if (alarmIntervalRef.current) {
@@ -68,13 +110,9 @@ export default function EmergencyAlert() {
   }, []);
 
   const startAlarmSound = useCallback(() => {
-    if (!soundEnabled) return;
     try {
       const ctx = getAudioContext();
-      if (!ctx) return;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
+      if (!ctx || ctx.state !== 'running') return;
       if (alarmIntervalRef.current) return;
 
       const playBeep = () => {
@@ -103,7 +141,7 @@ export default function EmergencyAlert() {
     } catch {
       // Audio autoplay policy catch
     }
-  }, [soundEnabled, getAudioContext]);
+  }, [getAudioContext]);
 
   // Subscribe to real-time active emergencies
   useEffect(() => {
@@ -126,15 +164,15 @@ export default function EmergencyAlert() {
 
   const hasUrgent = visibleUrgentItems.length > 0;
 
-  // Manage alarm sound based on presence of urgent alerts
+  // Manage alarm sound based on presence of urgent alerts and audioRunning
   useEffect(() => {
-    if (hasUrgent && soundEnabled) {
+    if (hasUrgent && audioRunning) {
       startAlarmSound();
     } else {
       stopAlarmSound();
     }
     return () => stopAlarmSound();
-  }, [hasUrgent, soundEnabled, startAlarmSound, stopAlarmSound]);
+  }, [hasUrgent, audioRunning, startAlarmSound, stopAlarmSound]);
 
   // Handle document.hidden, title blinking and desktop Notification
   useEffect(() => {
@@ -184,11 +222,14 @@ export default function EmergencyAlert() {
   async function handleEnableSound() {
     try {
       const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && ctx.state !== 'running') {
         await ctx.resume();
       }
-      sessionStorage.setItem('ukesmas_alarm_sound', 'enabled');
-      setSoundEnabled(true);
+      try {
+        sessionStorage.setItem('ukesmas_alarm_sound', 'enabled');
+      } catch {
+        // Safe sessionStorage catch
+      }
 
       // Request browser notification permission if not yet decided
       if ('Notification' in window && Notification.permission === 'default') {
@@ -220,12 +261,12 @@ export default function EmergencyAlert() {
 
   return (
     <>
-      {/* Autoplay sound activation pill */}
-      {!soundEnabled && (
+      {/* Autoplay sound activation pill: show whenever AudioContext is not running */}
+      {!audioRunning && (
         <div className="emg-sound-bar">
           <Volume2 size={16} />
           <span>Suara alarm belum aktif</span>
-          <button className="emg-sound-btn" onClick={handleEnableSound}>
+          <button type="button" className="emg-sound-btn" onClick={handleEnableSound}>
             <Bell size={12} /> Aktifkan suara alarm
           </button>
         </div>

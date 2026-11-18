@@ -51,7 +51,7 @@ async function callModel(model, messages) {
       body: JSON.stringify({
         model,
         reasoning_effort: 'low',
-        max_completion_tokens: 1500,
+        max_completion_tokens: 1000,
         temperature: 0.6,
         messages,
       }),
@@ -75,10 +75,17 @@ export async function askAI(messages) {
 
   const payload = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...messageList.slice(-10).map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content || '',
-    })),
+    ...messageList.slice(-10).map((m) => {
+      const isAssistant = m.role === 'assistant';
+      let content = m.content || '';
+      if (isAssistant && m.urgency) {
+        content = `${content}\n[URGENCY:${m.urgency}]`;
+      }
+      return {
+        role: isAssistant ? 'assistant' : 'user',
+        content,
+      };
+    }),
   ];
 
   let lastError;

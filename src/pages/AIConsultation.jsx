@@ -114,6 +114,7 @@ export default function AIConsultation() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState(null);
   const [bookingOpen, setBookingOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -130,33 +131,74 @@ export default function AIConsultation() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, error]);
 
   async function handleSendMessage(textToSend) {
     const text = (textToSend || input).trim();
     if (!text || isTyping || !profile?.id) return;
 
     setInput('');
+    setError(null);
     setIsTyping(true);
 
     try {
       await addChatMessage(profile.id, { role: 'user', content: text });
-      const history = [...messages, { role: 'user', content: text }];
-      const response = await askAI(history);
+    } catch (err) {
+      console.error('Gagal menyimpan pesan user:', err);
+      setError('Gagal mengirim pesan. Periksa koneksi internetmu.');
+      setIsTyping(false);
+      return;
+    }
 
+    const history = [...messages, { role: 'user', content: text }];
+    let response;
+    try {
+      response = await askAI(history);
+    } catch (err) {
+      console.error('AI consultation error:', err);
+      setError('Asisten AI sedang sibuk atau tidak dapat dihubungi. Coba lagi beberapa saat.');
+      setIsTyping(false);
+      return;
+    }
+
+    try {
       await addChatMessage(profile.id, {
         role: 'assistant',
         content: response.text,
         urgency: response.urgency,
       });
     } catch (err) {
-      console.error('AI consultation error:', err);
+      console.error('Gagal menyimpan balasan AI:', err);
+      setError('Gagal menyimpan balasan AI ke riwayat.');
+    } finally {
+      setIsTyping(false);
+    }
+  }
+
+  async function handleRetry() {
+    if (isTyping || !profile?.id || messages.length === 0) return;
+    setError(null);
+    setIsTyping(true);
+
+    let response;
+    try {
+      response = await askAI(messages);
+    } catch (err) {
+      console.error('AI retry error:', err);
+      setError('Asisten AI sedang sibuk atau tidak dapat dihubungi. Coba lagi beberapa saat.');
+      setIsTyping(false);
+      return;
+    }
+
+    try {
       await addChatMessage(profile.id, {
         role: 'assistant',
-        content:
-          'Maaf, asisten AI sedang tidak dapat dihubungi saat ini. Silakan coba kembali beberapa saat lagi atau buat janji temu langsung dengan petugas UKESMAS.',
-        urgency: 'LOW',
+        content: response.text,
+        urgency: response.urgency,
       });
+    } catch (err) {
+      console.error('Gagal menyimpan balasan AI saat coba lagi:', err);
+      setError('Gagal menyimpan balasan AI ke riwayat.');
     } finally {
       setIsTyping(false);
     }
@@ -170,6 +212,7 @@ export default function AIConsultation() {
   async function handleClearChat() {
     if (!profile?.id) return;
     if (window.confirm('Mulai percakapan baru? Riwayat obrolan ini akan dihapus.')) {
+      setError(null);
       try {
         await clearChat(profile.id);
       } catch (err) {
@@ -315,6 +358,23 @@ export default function AIConsultation() {
                 <span className="ai-dot" />
                 <span className="ai-dot" />
               </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="ai-error-box">
+              <div className="ai-error-text">
+                <AlertTriangle size={15} />
+                <span>{error}</span>
+              </div>
+              <button
+                type="button"
+                className="ai-btn-retry"
+                onClick={handleRetry}
+                disabled={isTyping}
+              >
+                <RotateCcw size={12} /> Coba lagi
+              </button>
             </div>
           )}
 
