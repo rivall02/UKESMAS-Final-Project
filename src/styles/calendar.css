@@ -1,0 +1,280 @@
+.calx-container {
+  position: relative;
+  display: inline-block;
+}
+
+.calx-trigger {
+  border: 1px solid #efdee6;
+  border-radius: 8px;
+  background: white;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #725b68;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.calx-trigger:hover {
+  background: #fff0f4;
+  border-color: #f2cbd9;
+}
+
+.calx-trigger.calx-active {
+  border-color: #d77f9f;
+  background: #fff5f8;
+  color: #b74f76;
+}
+
+.calx-trigger svg {
+  color: #d77f9f;
+  flex-shrink: 0;
+}
+
+.calx-clear-icon {
+  margin-left: 2px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  color: #a38d99;
+}
+
+.calx-clear-icon:hover {
+  color: #c9658b;
+}
+
+.calx-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  background: white;
+  border: 1px solid #f1e6eb;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(116, 70, 90, 0.12);
+  padding: 12px;
+  z-index: 30;
+}
+
+.calx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calx-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #594653;
+}
+
+.calx-nav-btn {
+  border: 0;
+  background: #fff0f4;
+  color: #c85f88;
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.calx-nav-btn:hover {
+  background: #fce1eb;
+}
+
+.calx-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #b18d9d;
+  margin-bottom: 4px;
+}
+
+.calx-weekday {
+  padding: 3px 0;
+}
+
+.calx-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.calx-cell {
+  border: 1px solid #f7edf1;
+  border-radius: 7px;
+  padding: 3px 1px;
+  min-height: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: white;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.calx-cell:hover {
+  border-color: #e5b9cb;
+  background: #fff8fa;
+}
+
+.calx-cell.calx-empty {
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.calx-cell-num {
+  font-size: 10px;
+  font-weight: 600;
+  color: #594653;
+  line-height: 1.1;
+}
+
+.calx-cell.calx-today {
+  border: 1.5px solid #d77f9f;
+  font-weight: 700;
+}
+
+.calx-cell.calx-selected {
+  outline: 2px solid #b74f76;
+  outline-offset: -1px;
+  box-shadow: 0 2px 6px rgba(183, 79, 118, 0.22);
+}
+
+.calx-marker-yellow {
+  background: #fffbe6;
+  border-color: #ffe58f;
+}
+
+.calx-marker-yellow .calx-cell-num {
+  color: #874d00;
+}
+
+.calx-marker-yellow .calx-badge {
+  background: #ffe58f;
+  color: #613400;
+}
+
+.calx-marker-green {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.calx-marker-green .calx-cell-num {
+  color: #237804;
+}
+
+.calx-marker-green .calx-badge {
+  background: #b7eb8f;
+  color: #135200;
+}
+
+.calx-marker-red {
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+
+.calx-marker-red .calx-cell-num {
+  color: #cf1322;
+}
+
+.calx-marker-red .calx-badge {
+  background: #ff4d4f;
+  color: white;
+}
+
+.calx-badge {
+  font-size: 7.5px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-top: 2px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.calx-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f7edf1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.calx-all-btn {
+  border: 0;
+  background: #fff0f4;
+  color: #c9658b;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-align: center;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.calx-all-btn:hover {
+  background: #fce1eb;
+}
+
+.calx-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 6px;
+  font-size: 8px;
+  color: #8a7380;
+}
+
+.calx-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calx-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calx-dot-neutral {
+  background: #ffffff;
+  border: 1px solid #d4c5cc;
+}
+
+.calx-dot-yellow {
+  background: #faad14;
+}
+
+.calx-dot-green {
+  background: #52c41a;
+}
+
+.calx-dot-red {
+  background: #ff4d4f;
+}
+
+@media (max-width: 480px) {
+  .calx-popup {
+    right: 0;
+    left: auto;
+    width: 270px;
+  }
+}
