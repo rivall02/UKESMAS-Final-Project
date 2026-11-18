@@ -163,7 +163,7 @@ export default function Health() {
           <article className="article" key={a.id}>
             <div>{a.emoji || '🌷'}</div>
             <div className="hl-card-meta">
-              <small>{a.category}</small>
+              <span className="hl-category-badge">{a.category}</span>
               {a.isTip && (
                 <span className="hl-badge-tip">
                   <Sparkles size={10} /> Tips harian
