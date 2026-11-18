@@ -120,8 +120,9 @@ export default function OtherPersonForm({ onSubmit, loading }) {
 
       {subType === 'student' ? (
         <div className="form">
-          <label>
-            Cari Mahasiswa (Nama atau NIM)
+          {/* Sengaja bukan <label>: klik di dalam label ikut menekan tombol "Ganti" sehingga pilihan langsung terhapus. */}
+          <div className="sos-field" role="group" aria-labelledby="sos-search-label">
+            <span id="sos-search-label">Cari Mahasiswa (Nama atau NIM)</span>
             {selectedStudent ? (
               <div className="sos-selected-student">
                 <div>
@@ -140,6 +141,7 @@ export default function OtherPersonForm({ onSubmit, loading }) {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    aria-labelledby="sos-search-label"
                     placeholder="Ketik minimal 2 huruf..."
                     style={{ width: '100%' }}
                   />
@@ -148,20 +150,21 @@ export default function OtherPersonForm({ onSubmit, loading }) {
                 {displayedResults.length > 0 && (
                   <div className="sos-search-results">
                     {displayedResults.map((s) => (
-                      <div
+                      <button
+                        type="button"
                         key={s.id}
                         className="sos-search-item"
                         onClick={() => handleSelectStudent(s)}
                       >
                         <b>{s.name}</b>
                         <small>{s.nim}</small>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
               </div>
             )}
-          </label>
+          </div>
         </div>
       ) : (
         <div className="form">

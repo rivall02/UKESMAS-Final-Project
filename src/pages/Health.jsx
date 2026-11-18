@@ -175,7 +175,7 @@ export default function Health() {
       <div className="articles">
         {filteredArticles.map((a) => (
           <article className="article" key={a.id}>
-            <div>{a.emoji || '🌷'}</div>
+            <div className="hl-card-emoji">{a.emoji || '🌷'}</div>
             <div className="hl-card-meta">
               <span className="hl-category-badge">{a.category}</span>
               {a.isTip && (

@@ -1,17 +1,21 @@
 const TZ = 'Asia/Makassar';
 
+// Ambil angka per bagian (tahun, bulan, jam, ...) lewat formatToParts.
+// Jangan mengandalkan hasil format() utuh: sebagian browser HP memberi "11/19/2026"
+// untuk locale en-CA, sehingga kalender jadi "Invalid Date".
+function partsWITA(options) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, ...options }).formatToParts(new Date());
+  return Object.fromEntries(parts.map((p) => [p.type, p.value]));
+}
+
 export function todayWITA() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+  const { year, month, day } = partsWITA({ year: 'numeric', month: '2-digit', day: '2-digit' });
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
 export function nowTimeWITA() {
-  const t = new Intl.DateTimeFormat('en-GB', {
-    timeZone: TZ,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date());
-  return t.replace(/^24/, '00');
+  const { hour, minute } = partsWITA({ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  return `${hour.replace(/^24$/, '00').padStart(2, '0')}:${minute.padStart(2, '0')}`;
 }
 
 export function toMinutes(time) {

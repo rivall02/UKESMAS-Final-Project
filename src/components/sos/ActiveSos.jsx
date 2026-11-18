@@ -18,6 +18,7 @@ export default function ActiveSos({
   emergencyDoc,
   merged,
   isMuted,
+  withSiren = true,
   onToggleSound,
 }) {
   const [note, setNote] = useState('');
@@ -134,7 +135,11 @@ export default function ActiveSos({
           <div className="sos-banner-icon">
             <AlertTriangle size={24} color="#fff" />
           </div>
-          <p>Jangan kunci layar atau keluar dari halaman ini agar petugas bisa menemukanmu lewat suara.</p>
+          <p>
+            {withSiren
+              ? 'Jangan kunci layar atau keluar dari halaman ini agar petugas bisa menemukanmu lewat suara.'
+              : 'Tetap dampingi korban dan tunjukkan lokasinya saat petugas datang. Status laporan diperbarui otomatis di halaman ini.'}
+          </p>
         </div>
       )}
 
@@ -149,7 +154,7 @@ export default function ActiveSos({
         <div className="sos-status-header">
           {renderStatusBadge()}
 
-          {!isFinished && (
+          {!isFinished && withSiren && (
             <button
               type="button"
               className={`sos-sound-toggle-btn ${isMuted ? 'muted' : 'active'}`}

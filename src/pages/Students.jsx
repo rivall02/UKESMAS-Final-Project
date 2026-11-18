@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/auth';
 import { subscribeStudents, setUserDisabled } from '../services/users';
 import Title from '../components/Title';
 import Empty from '../components/Empty';
+import Avatar from '../components/Avatar';
 
 export default function Students({ search }) {
   const { isAdmin } = useAuth();
@@ -49,7 +50,12 @@ export default function Students({ search }) {
             <tbody>
               {filtered.map((x) => (
                 <tr key={x.id}>
-                  <td>{x.name}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Avatar user={x} size={32} />
+                      <span>{x.name}</span>
+                    </div>
+                  </td>
                   <td>{x.nim}</td>
                   <td>{x.email}</td>
                   <td>

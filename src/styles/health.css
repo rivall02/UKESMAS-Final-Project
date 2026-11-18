@@ -52,8 +52,42 @@
   box-shadow: 0 8px 24px rgba(116, 70, 90, 0.08);
 }
 
-.articles .article>div {
+/* Aturan global .article>div (kotak 48px pink) hanya untuk emoji. */
+.articles .article > .hl-card-emoji {
   box-shadow: 0 2px 8px rgba(214, 109, 148, 0.1);
+}
+
+.articles .article > .hl-card-meta,
+.articles .article > .hl-card-footer {
+  width: auto;
+  height: auto;
+  font-size: inherit;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  place-items: initial;
+}
+
+.articles .article {
+  min-width: 0;
+}
+
+.articles .article h3 {
+  margin: 10px 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.articles .article p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hl-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
 }
 
 .hl-category-badge {
@@ -69,8 +103,22 @@
   border: 1px solid #fae1eb;
 }
 
+.hl-badge-tip {
+  font-size: 9px;
+  font-weight: 700;
+  color: #b0812f;
+  background: #fff6e4;
+  border: 1px solid #f6e2b8;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .hl-card-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
@@ -244,6 +292,28 @@
 }
 
 @media (max-width: 520px) {
+  .hl-categories {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .hl-category-chip {
+    flex-shrink: 0;
+  }
+  .hl-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hl-btn-read {
+    width: 100%;
+  }
+  .hl-staff-actions {
+    justify-content: flex-end;
+  }
+  .hl-btn-action {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
   .hl-top-bar {
     flex-direction: column;
     align-items: stretch;

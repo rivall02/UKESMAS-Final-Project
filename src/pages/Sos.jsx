@@ -28,6 +28,9 @@ export default function Sos() {
   const [merged, setMerged] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [checking, setChecking] = useState(true);
+  // Sirene, wake lock, dan peringatan tab hanya untuk SOS diri sendiri (korban bisa pingsan/tidak bisa bersuara).
+  // Laporan untuk orang lain tidak perlu sirene karena pelapor sendiri yang menunjukkan lokasi korban.
+  const [isSelfSos, setIsSelfSos] = useState(true);
 
   const sirenRef = useRef(null);
 
@@ -48,6 +51,7 @@ export default function Sos() {
         if (active && found) {
           setEmergencyId(found.id);
           setEmergencyDoc(found);
+          setIsSelfSos(found.victimType === 'self');
           // Browser tidak mengizinkan suara tanpa sentuhan, jadi sirene menunggu tombol "Bunyikan lagi".
           setIsMuted(true);
         }
@@ -84,7 +88,7 @@ export default function Sos() {
   }, [emergencyId]);
 
   useEffect(() => {
-    if (!emergencyId || isCompleted) return;
+    if (!emergencyId || isCompleted || !isSelfSos) return;
 
     let wakeLock = null;
 
@@ -114,10 +118,10 @@ export default function Sos() {
         wakeLock.release().catch(() => {});
       }
     };
-  }, [emergencyId, isCompleted]);
+  }, [emergencyId, isCompleted, isSelfSos]);
 
   useEffect(() => {
-    if (!emergencyId || isCompleted) return;
+    if (!emergencyId || isCompleted || !isSelfSos) return;
 
     function handleBeforeUnload(e) {
       e.preventDefault();
@@ -129,10 +133,10 @@ export default function Sos() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [emergencyId, isCompleted]);
+  }, [emergencyId, isCompleted, isSelfSos]);
 
   function handleToggleSound() {
-    if (isCompleted) return;
+    if (isCompleted || !isSelfSos) return;
     if (!sirenRef.current) {
       // SOS hasil pemulihan setelah refresh: sirene baru dibuat saat tombol disentuh.
       const siren = createSirenController();
@@ -153,6 +157,7 @@ export default function Sos() {
   async function handleSendSelf() {
     setError('');
     setLoading(true);
+    setIsSelfSos(true);
 
     const siren = createSirenController();
     sirenRef.current = siren;
@@ -190,11 +195,7 @@ export default function Sos() {
   }) {
     setError('');
     setLoading(true);
-
-    const siren = createSirenController();
-    sirenRef.current = siren;
-    siren.start();
-    setIsMuted(false);
+    setIsSelfSos(false);
 
     try {
       const location = await getCurrentLocation();
@@ -213,7 +214,6 @@ export default function Sos() {
       setEmergencyId(res.id);
       setMerged(Boolean(res.merged));
     } catch (err) {
-      siren.stop();
       setError('Gagal mengirim sinyal darurat: ' + (err.message || 'Terjadi kesalahan sistem.'));
     } finally {
       setLoading(false);
@@ -231,6 +231,7 @@ export default function Sos() {
           emergencyDoc={emergencyDoc}
           merged={merged}
           isMuted={isMuted}
+          withSiren={isSelfSos}
           onToggleSound={handleToggleSound}
         />
       </>
