@@ -66,6 +66,16 @@
   border-radius: 0;
   box-shadow: none;
   place-items: initial;
+  margin-bottom: 0;
+}
+
+/* .article>div global memakai display:grid; pastikan baris kategori & tombol tetap flex. */
+.articles .article > .hl-card-meta {
+  display: flex;
+}
+
+.articles .article > .hl-card-footer {
+  display: flex;
 }
 
 .articles .article {
