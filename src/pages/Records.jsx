@@ -12,10 +12,16 @@ import Calendar from '../components/Calendar';
 import Modal from '../components/Modal';
 import '../styles/records.css';
 
+const RECORD_LEGEND = [
+  { color: 'neutral', label: 'Tidak ada catatan' },
+  { color: 'green', label: 'Ada pemeriksaan' },
+  { color: 'red', label: 'Ada penanganan darurat' },
+];
+
 const emptyForm = () => ({
   userId: '',
   date: todayWITA(),
-  time: nowTimeWITA(),
+  time: '',
   service: RECORD_SERVICES[0],
   summary: '',
 });
@@ -48,8 +54,16 @@ export default function Records() {
     const student = students.find((s) => s.id === form.userId);
     setSaving(true);
     try {
+      let finalTime = '';
+      if (form.time && form.time.trim()) {
+        finalTime = form.time.trim();
+      } else if (form.date === todayWITA()) {
+        finalTime = nowTimeWITA();
+      }
+
       await createRecord({
         ...form,
+        time: finalTime,
         studentName: student?.name || '',
         nim: student?.nim || '',
         provider: profile.name || 'Petugas UKESMAS',
@@ -109,6 +123,14 @@ export default function Records() {
               />
             </label>
             <label>
+              Jam (opsional)
+              <input
+                type="time"
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+              />
+            </label>
+            <label>
               Layanan
               <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}>
                 {RECORD_SERVICES.map((s) => (
@@ -136,7 +158,12 @@ export default function Records() {
       <div className="panel">
         <div className="panelhead">
           <h3>Riwayat pemeriksaan</h3>
-          <Calendar value={date} onChange={setDate} markers={buildRecordMarkers(records)} />
+          <Calendar
+            value={date}
+            onChange={setDate}
+            markers={buildRecordMarkers(records)}
+            legend={RECORD_LEGEND}
+          />
         </div>
 
         {isStaff && (
@@ -163,6 +190,12 @@ export default function Records() {
                   onClick={() => {
                     if (isStaff) setSelectedRecord(r);
                   }}
+                  onKeyDown={(e) => {
+                    if (isStaff && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setSelectedRecord(r);
+                    }
+                  }}
                   role={isStaff ? 'button' : undefined}
                   tabIndex={isStaff ? 0 : undefined}
                 >
@@ -188,7 +221,27 @@ export default function Records() {
           </div>
         ))}
 
-        {!filtered.length && <Empty>Belum ada riwayat pemeriksaan.</Empty>}
+        {!filtered.length && (
+          records.length === 0 ? (
+            <Empty>Belum ada riwayat pemeriksaan.</Empty>
+          ) : (
+            <Empty>
+              Tidak ada catatan yang cocok.
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => {
+                    setDate('');
+                    setSearchQuery('');
+                  }}
+                >
+                  Reset filter
+                </button>
+              </div>
+            </Empty>
+          )
+        )}
       </div>
 
       {selectedRecord && (

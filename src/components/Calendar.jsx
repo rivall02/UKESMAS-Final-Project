@@ -5,6 +5,13 @@ import '../styles/calendar.css';
 
 const DAYS_HEADER = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
+const DEFAULT_LEGEND = [
+  { color: 'neutral', label: 'Tidak ada janji' },
+  { color: 'yellow', label: 'Belum selesai' },
+  { color: 'green', label: 'Selesai semua' },
+  { color: 'red', label: 'Ada darurat' },
+];
+
 function parseYearMonth(dateString) {
   if (dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     const [y, m] = dateString.split('-').map(Number);
@@ -15,7 +22,7 @@ function parseYearMonth(dateString) {
   return { year: y, month: m - 1 };
 }
 
-export default function Calendar({ value = '', onChange, markers = {} }) {
+export default function Calendar({ value = '', onChange, markers = {}, legend = DEFAULT_LEGEND }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -122,26 +129,28 @@ export default function Calendar({ value = '', onChange, markers = {} }) {
 
   return (
     <div className="calx-container" ref={containerRef}>
-      <button
-        type="button"
-        className={`calx-trigger ${value ? 'calx-active' : ''}`}
-        onClick={() => setOpen((prev) => !prev)}
-        aria-label="Filter tanggal"
-      >
-        <CalendarDays size={14} />
-        <span>{value ? formatDate(value) : 'Semua tanggal'}</span>
+      <div className="calx-trigger-group">
+        <button
+          type="button"
+          className={`calx-trigger ${value ? 'calx-active' : ''}`}
+          onClick={() => setOpen((prev) => !prev)}
+          aria-label="Filter tanggal"
+        >
+          <CalendarDays size={14} />
+          <span>{value ? formatDate(value) : 'Semua tanggal'}</span>
+        </button>
         {value && (
-          <span
-            className="calx-clear-icon"
+          <button
+            type="button"
+            className="calx-clear-btn"
             onClick={handleClear}
-            role="button"
-            tabIndex={0}
             aria-label="Hapus filter tanggal"
+            title="Hapus filter tanggal"
           >
             <X size={12} />
-          </span>
+          </button>
         )}
-      </button>
+      </div>
 
       {open && (
         <div className="calx-popup">
@@ -176,7 +185,7 @@ export default function Calendar({ value = '', onChange, markers = {} }) {
           <div className="calx-grid">
             {cells.map((cell) => {
               if (cell.empty) {
-                return <div key={cell.key} className="calx-cell calx-empty" />;
+                return <div key={cell.key} className="calx-cell calx-empty" aria-hidden="true" />;
               }
 
               const markerClass = cell.marker ? `calx-marker-${cell.marker.color}` : '';
@@ -184,12 +193,18 @@ export default function Calendar({ value = '', onChange, markers = {} }) {
               const selectedClass = cell.isSelected ? 'calx-selected' : '';
 
               return (
-                <div
+                <button
+                  type="button"
                   key={cell.key}
                   className={`calx-cell ${markerClass} ${todayClass} ${selectedClass}`.trim()}
                   onClick={() => handleSelectDate(cell.dateStr)}
-                  role="button"
-                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectDate(cell.dateStr);
+                    }
+                  }}
+                  aria-label={`Tanggal ${cell.dayNum}`}
                 >
                   <span className="calx-cell-num">{cell.dayNum}</span>
                   {cell.marker && (
@@ -197,7 +212,7 @@ export default function Calendar({ value = '', onChange, markers = {} }) {
                       {cell.marker.done}/{cell.marker.total}
                     </span>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -215,22 +230,12 @@ export default function Calendar({ value = '', onChange, markers = {} }) {
             </button>
 
             <div className="calx-legend">
-              <div className="calx-legend-item">
-                <span className="calx-dot calx-dot-neutral" />
-                <span>Tidak ada janji</span>
-              </div>
-              <div className="calx-legend-item">
-                <span className="calx-dot calx-dot-yellow" />
-                <span>Belum selesai</span>
-              </div>
-              <div className="calx-legend-item">
-                <span className="calx-dot calx-dot-green" />
-                <span>Selesai semua</span>
-              </div>
-              <div className="calx-legend-item">
-                <span className="calx-dot calx-dot-red" />
-                <span>Ada darurat</span>
-              </div>
+              {legend.map((item) => (
+                <div className="calx-legend-item" key={item.label}>
+                  <span className={`calx-dot calx-dot-${item.color}`} />
+                  <span>{item.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

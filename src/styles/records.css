@@ -1,3 +1,23 @@
+.recordform {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.recordform .wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 850px) {
+  .recordform {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .recordform {
+    grid-template-columns: 1fr;
+  }
+}
+
 .rec-search-box {
   display: flex;
   align-items: center;
@@ -65,6 +85,11 @@
   border-color: #f0c5d7;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(116, 70, 90, 0.05);
+}
+
+.rec-item:focus-visible {
+  outline: 2px solid #b74f76;
+  outline-offset: 1px;
 }
 
 .rec-item-icon {

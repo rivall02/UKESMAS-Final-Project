@@ -3,6 +3,12 @@
   display: inline-block;
 }
 
+.calx-trigger-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .calx-trigger {
   border: 1px solid #efdee6;
   border-radius: 8px;
@@ -34,16 +40,22 @@
   flex-shrink: 0;
 }
 
-.calx-clear-icon {
-  margin-left: 2px;
-  border-radius: 50%;
+.calx-clear-btn {
+  border: 1px solid #efdee6;
+  border-radius: 8px;
+  background: white;
+  padding: 6px 7px;
   display: inline-grid;
   place-items: center;
-  color: #a38d99;
+  color: #9f788b;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.calx-clear-icon:hover {
-  color: #c9658b;
+.calx-clear-btn:hover {
+  background: #fff0f4;
+  border-color: #f2cbd9;
+  color: #c85f88;
 }
 
 .calx-popup {
@@ -123,6 +135,7 @@
   background: white;
   transition: all 0.15s ease;
   user-select: none;
+  font-family: inherit;
 }
 
 .calx-cell:hover {
@@ -273,8 +286,13 @@
 
 @media (max-width: 480px) {
   .calx-popup {
-    right: 0;
-    left: auto;
-    width: 270px;
+    position: fixed;
+    left: 50%;
+    right: auto;
+    top: 80px;
+    transform: translateX(-50%);
+    width: min(300px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    z-index: 50;
   }
 }
