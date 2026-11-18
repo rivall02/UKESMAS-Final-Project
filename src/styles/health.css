@@ -66,6 +66,31 @@
   margin-top: 14px;
   padding-top: 10px;
   border-top: 1px dashed #f5e4ec;
+  gap: 8px;
+}
+
+.hl-btn-read {
+  border: 1px solid #f6d1df;
+  background: #fff0f4;
+  color: #c85f88;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.hl-btn-read:hover {
+  background: #d77f9f;
+  color: white;
+  border-color: #d77f9f;
 }
 
 .hl-staff-actions {

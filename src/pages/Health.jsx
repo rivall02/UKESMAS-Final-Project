@@ -174,7 +174,7 @@ export default function Health() {
             <p>{a.description}</p>
 
             <div className="hl-card-footer">
-              <button type="button" className="link" onClick={() => setSelected(a)}>
+              <button type="button" className="hl-btn-read" onClick={() => setSelected(a)}>
                 Baca selengkapnya →
               </button>
 
